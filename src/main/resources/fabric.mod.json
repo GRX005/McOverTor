@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "id": "mcovertor",
+  "version": "${version}",
+
+  "name": "McOverTor",
+  "description": "Connect to servers through Tor.",
+  "authors": [
+    "_1ms",
+    "Roland882"
+  ],
+  "contact": {
+    "GitHub": "https://github.com/GRX005",
+    "GitHub2": "https://github.com/Roland882",
+    "Modrinth": "https://modrinth.com/organization/nexatrix-studios"
+  },
+
+  "license": "GPL-3.0",
+  "icon": "assets/mcovertor.png",
+
+  "environment": "client",
+  "entrypoints": {
+    "main": ["_1ms.McOverTor.Main"]
+  },
+
+  "mixins": [
+    "mcovertor.mixins.json"
+  ],
+
+  "depends": {
+    "fabricloader": ">=0.16.0",
+    "fabric": "*",
+    "minecraft": ">=1.20.2"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "_1ms.McOverTor.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+  ],
+  "client": [
+    "MultiplayerButton",
+    "TorConnect"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
