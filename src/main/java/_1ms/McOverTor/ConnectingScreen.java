@@ -10,7 +10,6 @@ import net.minecraft.text.Text;
 import java.util.Objects;
 
 public class ConnectingScreen extends Screen {
-
     public static volatile int progress = 0;
     public static String message = "";
     private ButtonWidget closeButton;
@@ -50,10 +49,9 @@ public class ConnectingScreen extends Screen {
         this.addDrawableChild(closeButton);
     }
     public void renderProgressBar(DrawContext context, int x, int y, int barWidth, int barHeight) {
-        context.fill(x + 5, y + 5, x + barWidth + 5, y + barHeight + 5, 0x66000000);
-        context.fill(x - 1, y - 1, x + barWidth + 1, y + barHeight + 1, 0xFFD3D3D3);
+        context.drawBorder(x - 1, y - 1, barWidth + 2, barHeight + 2, 0xFFD3D3D3);
         context.fill(x, y, x + (progress * 2), y + barHeight, 0xFF00FF00);
-        context.fill(x + (progress * 2), y, x + barWidth, y + barHeight, 0xFF000000);
+        context.fill(x + (progress * 2), y, x + barWidth, y + barHeight, 0x80000000);
     }
 
     public static void setProgress(int progress1) {
