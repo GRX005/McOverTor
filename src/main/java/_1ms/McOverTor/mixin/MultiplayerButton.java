@@ -2,6 +2,7 @@ package _1ms.McOverTor.mixin;
 
 import _1ms.McOverTor.ChangeIPScreen;
 import _1ms.McOverTor.ConnectingScreen;
+import _1ms.McOverTor.SettingsScreen;
 import _1ms.McOverTor.TorManager;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.TitleScreen;
@@ -44,17 +45,17 @@ public class MultiplayerButton extends Screen {
                 (buttonWidget) -> Objects.requireNonNull(this.client).setScreen(new ChangeIPScreen())
         ).dimensions(10, screen.height - 30, 95, 20).build();
 
-        //final ButtonWidget settingsButton = ButtonWidget.builder(Text.literal(""), (buttonWidget) -> {
-        //System.out.println("Settings clicked!");
-        //    // TODO: Ide majd be kell rakni a SettingsScreen-t ha kész
-        //}).dimensions(140, screen.height - 55, 43, 45).build();
+        final ButtonWidget settingsButton = ButtonWidget.builder(
+                Text.literal("Settings"),
+                (buttonWidget) -> Objects.requireNonNull(this.client).setScreen(new SettingsScreen())
+        ).dimensions(140, screen.height - 55, 43, 45).build();
 
         this.addDrawableChild(torStatusButton);
         this.addSelectableChild(torStatusButton);
         this.addDrawableChild(newIpButton);
         this.addSelectableChild(newIpButton);
-        //this.addDrawableChild(settingsButton);
-        //this.addSelectableChild(settingsButton);
+        this.addDrawableChild(settingsButton);
+        this.addSelectableChild(settingsButton);
     }
 
 //    @Override
