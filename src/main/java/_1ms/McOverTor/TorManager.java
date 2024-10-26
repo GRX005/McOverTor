@@ -6,13 +6,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class TorManager {
-
     static Socket socket;
     static PrintWriter out;
     static BufferedReader in;
     static Process torP;
     static final File torFile = new File(System.getProperty("java.io.tmpdir"), "tor.exe");
-
 
     public static void extractTor() {
         try (InputStream in = TorManager.class.getResourceAsStream("/tor.exe");
@@ -49,6 +47,7 @@ public class TorManager {
                     } catch (IOException e) {
                         throw new RuntimeException(e);
                     }
+                    System.out.println(line);
                     if(line.contains("WSAEADDRINUSE")) {
                         try {
                             new ProcessBuilder("taskkill", "/F", "/IM", "tor.exe").start().waitFor();

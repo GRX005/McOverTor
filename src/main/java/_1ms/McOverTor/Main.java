@@ -12,7 +12,6 @@ public class Main implements ModInitializer {
     static File confDir;
     @Override
     public void onInitialize() {
-        OptionsManager.loadOptions();
         confDir = new File(FabricLoader.getInstance().getGameDir().toFile(), "mcovertor");
         if(!confDir.exists()) {
             if(confDir.mkdir()) {
