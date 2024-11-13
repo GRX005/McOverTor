@@ -27,13 +27,13 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static _1ms.McOverTor.Main.confPath;
 
 public class SettingsMgr {
-
-
-    private static final String settConf = confPath+"\\config.cfg";
+    private static final String settConf = confPath+File.separator+"config.cfg";
     private static final Gson gson = new Gson();
     private static HashMap<String, Boolean> settings = new HashMap<>();
 
@@ -56,20 +56,28 @@ public class SettingsMgr {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> saveConfig(false)));
         if(Files.notExists(Paths.get(settConf))) {
             saveConfig(true);
-            TorManager.extractTor("/tor.exe", TorManager.torFile.getAbsolutePath(), false);
-            TorManager.extractTor("/geoip", new File(confPath, "geoip").getAbsolutePath(), false);
-            TorManager.extractTor("/geoip6", new File(confPath, "geoip6").getAbsolutePath(), false);
+            ExecutorService unpackTask = Executors.newSingleThreadExecutor();
+            unpackTask.submit(() -> { //Async unpack so it doesn't slow down the starting of the game.
+                TorManager.extractTor("/tor/tor", confPath+File.separator+"tor", false);
+                TorManager.extractTor("/tor/libcrypto.so.3", confPath+File.separator+"libcrypto.so.3", false);
+                TorManager.extractTor("/tor/libevent-2.1.so.7", confPath+File.separator+"libevent-2.1.so.7", false);
+                TorManager.extractTor("/tor/libssl.so.3", confPath+File.separator+"libssl.so.3", false);
+                TorManager.extractTor("/tor/libstdc++.so.6", confPath+File.separator+"libstdc++.so.6", false);
+                TorManager.extractTor("/tor/geoip", confPath+File.separator+"geoip", false);
+                TorManager.extractTor("/tor/geoip6", confPath+File.separator+"geoip6", false);
+            });
+            unpackTask.shutdown();
             return;
         }
         settings = loadConfig();
     }
 
-    public static void flip(String szart) {
-        settings.replace(szart, !settings.get(szart));
+    public static void flip(String val) {
+        settings.replace(val, !settings.get(val));
     }
 
-    public static boolean get(String szart) {
-        return settings.get(szart);
+    public static boolean get(String val) {
+        return settings.get(val);
     }
 
     private static HashMap<String, Boolean> loadConfig() {

@@ -47,7 +47,7 @@ public class Main implements ModInitializer {
                     return;
                 }
                 try(FileWriter fw = new FileWriter(torrc)) {
-                    fw.write("ControlPort 9051\nHashedControlPassword 16:5CC34EC2B16C1DA260CE40B1D139DA73AAFAFF5EA46E17D2E20191BA76\nGeoIPFile \"mcovertor\\\\geoip\"\nGeoIPv6File \"mcovertor\\\\geoip6\"");
+                    fw.write("ControlPort 9051\nHashedControlPassword 16:5CC34EC2B16C1DA260CE40B1D139DA73AAFAFF5EA46E17D2E20191BA76\nGeoIPFile \"mcovertor"+File.separator+"geoip\"\nGeoIPv6File \"mcovertor"+File.separator+"geoip6\"");
                 }
                 System.out.println("[McOverTor] Config file created.");
             } catch (IOException e) {

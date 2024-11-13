@@ -35,8 +35,7 @@ import java.net.InetSocketAddress;
 public abstract class TorConnect {
     @Inject(method = "initChannel(Lio/netty/channel/Channel;)V", at = @At("HEAD"))
     private void connect(Channel channel, CallbackInfo ci) {
-        if(ConnectScreen.progress == 100 || SettingsMgr.get("torOnly")) {
+        if(ConnectScreen.progress == 100 || SettingsMgr.get("torOnly"))
             channel.pipeline().addFirst(new Socks5ProxyHandler(new InetSocketAddress("127.0.0.1", 9050)));
-        }
     }
 }

@@ -45,7 +45,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 @Mixin(MultiplayerScreen.class)
-public class MpButtonsAdd extends Screen {
+public abstract class MpButtonsAdd extends Screen {
 
     @Unique
     private static final Identifier settIcon = Identifier.of("mcovertor", "textures/settings.png");
@@ -57,6 +57,8 @@ public class MpButtonsAdd extends Screen {
     ).dimensions(0, 0, 95, 21).build();
 
     @Unique
+    private static int i = 0;
+    @Unique
     private static final ButtonWidget settButton = new ButtonWidget(0, 0, 26, 26, Text.empty(), button -> Objects.requireNonNull(MinecraftClient.getInstance()).setScreen(new SettingsScreen()), Supplier::get) {
         @Override
         public void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
@@ -65,7 +67,7 @@ public class MpButtonsAdd extends Screen {
                 // Use the 1.21.3 method if available
                 //context.drawTexture(RenderLayer::getGuiTextured, settIcon, this.getX() + 2, this.getY() + 2, 0, 0, 22, 21, 22, 21);
                 Method drawTextureMethod = DrawContext.class.getMethod(
-                        "drawTexture",
+                        "method_25290",
                         Function.class, Identifier.class, int.class, int.class, float.class, float.class, int.class, int.class, int.class, int.class
                 );
                 drawTextureMethod.invoke(
@@ -87,7 +89,10 @@ public class MpButtonsAdd extends Screen {
                             0, 0, 22, 21, 22, 21
                     );
                 } catch (ReflectiveOperationException ex) {
-                    System.out.println("[McOverTor] Error while trying to render settings btn icon in compatibility mode: " + ex);
+                    if(i==0) {
+                        System.out.println("[McOverTor] Error while trying to render settings btn icon in compatibility mode: " + ex);
+                        i++;
+                    }
                 }
             }
         }
@@ -102,6 +107,8 @@ public class MpButtonsAdd extends Screen {
         newIpButton.setPosition(10, this.height - 30);
         //settingsB.setPosition(110, this.height -50);
         settButton.setPosition(107, this.height -45);
+        if(i!=0)
+            i--;
 
         newIpButton.active = ConnectScreen.progress >= 100;
         newIpButton.setFocused(false);
