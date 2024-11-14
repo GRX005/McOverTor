@@ -20,7 +20,6 @@
 
 package _1ms.McOverTor.manager;
 
-import _1ms.McOverTor.Main;
 import _1ms.McOverTor.screen.ChangeIPScreen;
 import _1ms.McOverTor.screen.ConnectScreen;
 
@@ -28,6 +27,8 @@ import java.io.*;
 import java.net.Socket;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
+import static _1ms.McOverTor.Main.confPath;
 
 public class TorManager {
     private static Socket socket;
@@ -57,9 +58,10 @@ public class TorManager {
 
     public static void killTor(final boolean relaunch) {
         try {
-            new ProcessBuilder("taskkill", "/F", "/IM", "tor.exe").start().waitFor();
+            final Process pb = new ProcessBuilder("taskkill", "/F", "/IM", "tor/tor.exe").start();
             if(torStopThread != null)
                 Runtime.getRuntime().removeShutdownHook(torStopThread);
+            pb.waitFor();
             if(relaunch)
                 launchTor();
             System.out.println("[McTorControl] Killed already running Tor.");
@@ -68,8 +70,9 @@ public class TorManager {
         }
     }
 
+    private static int i = 0;
     public static void launchTor() {
-        final ProcessBuilder pb = new ProcessBuilder(torFile.getAbsolutePath(), "-f", Main.confPath+"\\torrc", "--DataDirectory", Main.confPath);
+        final ProcessBuilder pb = new ProcessBuilder(torFile.getAbsolutePath(), "-f", confPath+File.separator+"torrc", "--DataDirectory", confPath);
         final ExecutorService executor = Executors.newSingleThreadExecutor();
         try {
             torP = pb.start();
@@ -78,10 +81,11 @@ public class TorManager {
                 String line;
                 while (true) {
                     try {
-                        if ((line = reader.readLine()) == null) break;
+                        if ((line = reader.readLine()) == null) break; //TODO CHange this so it stops when it reaches 100 rather.
                     } catch (IOException e) {
-                        throw new RuntimeException(e);
+                        throw new RuntimeException("Tor client runtime error.",e);
                     }
+                    System.out.println(line); //TODO REMOVE
                     if(line.contains("WSAEADDRINUSE")) {
                         killTor(true);
                         break;
@@ -104,9 +108,12 @@ public class TorManager {
             }
             System.out.println("[McTorControl] Tor successfully started.");
         } catch (IOException e) {
-            TorManager.extractTor("/tor.exe", torFile.getAbsolutePath(), false);
-            TorManager.extractTor("/geoip", Main.confPath, false);
-            TorManager.extractTor("/geoip6", Main.confPath, true);
+            if(i<2) {
+                TorManager.extractTor("/tor/tor.exe", torFile.getAbsolutePath(), true);
+                i++;
+                return;
+            }
+            throw new RuntimeException("Failed to launch Tor!", e);
         }
     }
 
