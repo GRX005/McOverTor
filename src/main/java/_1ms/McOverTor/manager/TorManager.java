@@ -61,9 +61,10 @@ public class TorManager {
 
     public static void killTor(final boolean relaunch) {
         try {
-            new ProcessBuilder("killall","tor").start().waitFor();
+            final Process pb = new ProcessBuilder("killall","tor").start();
             if(torStopThread != null)
                 Runtime.getRuntime().removeShutdownHook(torStopThread);
+            pb.waitFor();
             if(relaunch)
                 launchTor();
             System.out.println("[McTorControl] Killed already running Tor.");
