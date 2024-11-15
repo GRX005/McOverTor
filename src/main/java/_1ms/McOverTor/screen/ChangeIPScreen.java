@@ -30,6 +30,8 @@ import net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.text.Text;
 
+import java.awt.*;
+
 public class ChangeIPScreen extends Screen {
     private static final ButtonWidget closeButton = ButtonWidget.builder(Text.literal("Okay"), (buttonWidget) -> RealClose())
             .dimensions(0, 0, 120, 20)
@@ -70,10 +72,10 @@ public class ChangeIPScreen extends Screen {
         closeButton.render(context, mouseX, mouseY, delta);
 
         if(!isDone) {
-            context.drawCenteredTextWithShadow(this.textRenderer, Text.literal("§aChanging IP..."), centerX, centerY, 0xFFFFFF);
+            context.drawCenteredTextWithShadow(this.textRenderer, Text.literal("Changing IP..."), centerX, centerY, 0xFFFFFF);
             TorManager.changeCircuits();
             return;
         }
-        context.drawCenteredTextWithShadow(this.textRenderer, Text.literal("§aYou've successfully changed IP."), centerX, centerY, 0xFFFFFF);
+        context.drawCenteredTextWithShadow(this.textRenderer, Text.literal("You've successfully changed IP."), centerX, centerY, Color.GREEN.getRGB());
     }
 }

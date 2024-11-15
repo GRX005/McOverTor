@@ -82,7 +82,7 @@ public class SettingsMgr {
 
     private static HashMap<String, Boolean> loadConfig() {
         try (final BufferedReader reader = new BufferedReader(new FileReader(settConf))) {
-            System.out.println("LOADING " +reader.readLine()); // Skip the version line
+            System.out.println("[McOverTor] LOADING " +reader.readLine()); // Skip the version line
             return gson.fromJson(reader, new TypeToken<HashMap<String, Boolean>>() {}.getType());
         } catch (IOException e) {
             throw new RuntimeException("[McOverTor] Failed to load config." ,e);

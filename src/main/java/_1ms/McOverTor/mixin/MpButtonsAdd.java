@@ -64,8 +64,8 @@ public abstract class MpButtonsAdd extends Screen {
         public void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
             super.renderWidget(context, mouseX, mouseY, delta);
             try {
-                // Use the 1.21.3 method if available
                 //context.drawTexture(RenderLayer::getGuiTextured, settIcon, this.getX() + 2, this.getY() + 2, 0, 0, 22, 21, 22, 21);
+                //Use the 1.21.3 method if available (Using runtime intermediary function name of the above)
                 Method drawTextureMethod = DrawContext.class.getMethod(
                         "method_25290",
                         Function.class, Identifier.class, int.class, int.class, float.class, float.class, int.class, int.class, int.class, int.class
@@ -77,7 +77,7 @@ public abstract class MpButtonsAdd extends Screen {
                         0.0f, 0.0f, 22, 21, 22, 21
                 );
             } catch (ReflectiveOperationException e) {
-                // Fall back to 1.21.1 method using intermediary name `method_25290`
+                //Fall back to 1.21.1
                 try {
                     Method drawTextureMethod = DrawContext.class.getMethod(
                             "method_25290",
@@ -125,8 +125,8 @@ public abstract class MpButtonsAdd extends Screen {
                         Objects.requireNonNull(MinecraftClient.getInstance()).setScreen(new MultiplayerScreen(new TitleScreen()));
                     }
                 }
-        ).dimensions(10, this.height - 55, 95, 21).build());
-        this.addDrawableChild(newIpButton); //We init this here otherwise it'll stay focused for some reason after turning it off.
+        ).dimensions(10, this.height - 55, 95, 21).build()); //We init this here otherwise it'll stay focused for some reason after turning it off.
+        this.addDrawableChild(newIpButton);
         this.addDrawableChild(settButton);
     }
 }
