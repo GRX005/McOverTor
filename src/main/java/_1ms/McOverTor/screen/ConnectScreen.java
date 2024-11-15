@@ -30,11 +30,13 @@ import net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.text.Text;
 
+import java.awt.*;
 import java.util.Objects;
 
 public class ConnectScreen extends Screen {
     //private static final Identifier IMAGE_ID = Identifier.of("mcovertor", "tor");
 
+    public static boolean fail = false;
     public static int progress = 0;
     public static String message = "";
     private static final ButtonWidget closeButton = ButtonWidget.builder(Text.literal("Okay"), (buttonWidget) -> realClose())
@@ -46,6 +48,7 @@ public class ConnectScreen extends Screen {
         else
             TorManager.exitTor(true);
         realClose();
+        fail = false;
     }).dimensions(0, 0, 120, 20).build();
 
     public ConnectScreen() {
@@ -92,6 +95,10 @@ public class ConnectScreen extends Screen {
         //context.drawGuiTexture(IMAGE_ID, x, y-270, 179, 108);
         Main.renderWindow(context, x-110, y-80, barWidth+220, barHeight+140, "McOverTor Connection");
 
+        if(fail){
+            context.drawCenteredTextWithShadow(this.textRenderer, Text.literal("Failed to close already running Tor!"), xhalf, y + barHeight - 10, Color.RED.getRGB());
+        }
+
         renderProgressBar(context, x, y-20, barWidth, barHeight);
 
         context.drawCenteredTextWithShadow(this.textRenderer, Text.literal(progress + "%"), xhalf, y-14, 0xFFFFFF);
@@ -101,7 +108,7 @@ public class ConnectScreen extends Screen {
             cancelButton.render(context, mouseX, mouseY, delta);
             return;
         }
-        context.drawCenteredTextWithShadow(this.textRenderer, Text.literal("Successfully connected to Tor!"), xhalf, yhalf - 60, 0x00FF00);
+        context.drawCenteredTextWithShadow(this.textRenderer, Text.literal("Successfully connected to Tor!"), xhalf, yhalf - 60, Color.GREEN.getRGB());
         if(i == 0) {
             this.remove(cancelButton);
             this.addSelectableChild(closeButton);
@@ -110,7 +117,7 @@ public class ConnectScreen extends Screen {
         closeButton.render(context, mouseX, mouseY, delta);
     }
     public void renderProgressBar(DrawContext context, int x, int y, int barWidth, int barHeight) {
-        context.drawBorder(x - 1, y - 1, barWidth + 2, barHeight + 2, 0xFFD3D3D3);
+        context.drawBorder(x - 1, y - 1, barWidth + 2, barHeight + 2, 0xFFFFFFFF);
         context.fill(x, y, x + (progress * 2), y + barHeight, 0xFF00FF00);
         context.fill(x + (progress * 2), y, x + barWidth, y + barHeight, 0x80000000);
     }

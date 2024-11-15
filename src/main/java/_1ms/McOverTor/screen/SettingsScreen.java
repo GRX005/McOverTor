@@ -44,9 +44,18 @@ public class SettingsScreen extends Screen {
 
      @Override
      protected void init() {
-        super.init();
+         super.init();
          doneBtn.setFocused(false);
          sepStr.setTooltip(Tooltip.of(Text.literal("Get a new IP every time you join a server.")));
+
+         final int x = (this.width - 200) / 2;
+         final int yhalf = this.height / 2;
+         final int y = yhalf - 10;
+
+         preventNonTor.setPosition(x-30, y-100);
+         sepStr.setPosition(x-30, y-75);
+         doneBtn.setPosition(x+40, y+200);
+
          this.addSelectableChild(preventNonTor);
          this.addSelectableChild(sepStr);
          this.addSelectableChild(doneBtn);
@@ -68,10 +77,6 @@ public class SettingsScreen extends Screen {
         final int x = (this.width - 200) / 2;
         final int yhalf = this.height / 2;
         final int y = yhalf - 10;
-
-        preventNonTor.setPosition(x-30, y-100);
-        sepStr.setPosition(x-30, y-75);
-        doneBtn.setPosition(x+40, y+200);
 
         Main.renderWindow(context, x-50, y-120, 300, 350, "McOverTor Settings");
         preventNonTor.render(context, mouseX, mouseY, delta);

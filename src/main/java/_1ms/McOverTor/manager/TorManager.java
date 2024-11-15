@@ -43,14 +43,14 @@ public class TorManager {
         try (final InputStream in = TorManager.class.getResourceAsStream(input);
              final OutputStream out = new FileOutputStream(output)) {
             if (in == null)
-                throw new FileNotFoundException("Couldn't start Tor, file not found.");
+                throw new FileNotFoundException("[McTorControl] Couldn't start Tor, file not found.");
             final byte[] buffer = new byte[4096];
             int read;
             while ((read = in.read(buffer)) != -1) {
                 out.write(buffer, 0, read);
             }
         } catch (IOException e) {
-            throw new RuntimeException("Couldn't extract tor", e);
+            throw new RuntimeException("[McTorControl] Couldn't extract tor", e);
         }
         if(launch)
             launchTor();
@@ -58,15 +58,17 @@ public class TorManager {
 
     public static void killTor(final boolean relaunch) {
         try {
-            final Process pb = new ProcessBuilder("taskkill", "/F", "/IM", "tor/tor.exe").start();
+            final Process pb = new ProcessBuilder("taskkill", "/F", "/IM", "tor.exe").start();
             if(torStopThread != null)
                 Runtime.getRuntime().removeShutdownHook(torStopThread);
             pb.waitFor();
             if(relaunch)
                 launchTor();
+            else
+                resetProg();
             System.out.println("[McTorControl] Killed already running Tor.");
-        } catch (IOException | InterruptedException e) {
-            throw new RuntimeException("Failed to kill Tor.", e);
+        } catch (IOException | InterruptedException ignored) {
+            ConnectScreen.fail = true;
         }
     }
 
@@ -81,11 +83,10 @@ public class TorManager {
                 String line;
                 while (true) {
                     try {
-                        if ((line = reader.readLine()) == null) break; //TODO CHange this so it stops when it reaches 100 rather.
+                        if ((line = reader.readLine()) == null) break;
                     } catch (IOException e) {
-                        throw new RuntimeException("Tor client runtime error.",e);
+                        throw new RuntimeException("[McTorControl] Tor client runtime error.",e);
                     }
-                    System.out.println(line); //TODO REMOVE
                     if(line.contains("WSAEADDRINUSE")) {
                         killTor(true);
                         break;
@@ -93,12 +94,14 @@ public class TorManager {
                     if (line.contains("Bootstrapped")) {
                         final int progress = Integer.parseInt(line.substring(line.indexOf("Bootstrapped") + 12, line.indexOf("%")).trim());
                         final String message = line.substring(line.indexOf("%") + 1).trim();
-                        System.out.println("Progress: " + progress + "%, Status: " + message);
+                        System.out.println("[McTorControl] Progress: " + progress + "%, Status: " + message);
                         //Itt meg tudsz hívni egy funkciót ami előrébb viszi a progress bars progress százalékra
                         ConnectScreen.progress = progress;
                         ConnectScreen.message = message;
                         if (message.contains("(starting)"))
                             authControl();
+                        if(progress == 100)
+                            break; //Shut down reader after Tor is Loaded.
                     }
                 }
             });
@@ -106,15 +109,20 @@ public class TorManager {
             if(torStopThread == null) {
                 Runtime.getRuntime().addShutdownHook(torStopThread = new Thread(() -> TorManager.exitTor(false)));
             }
-            System.out.println("[McTorControl] Tor successfully started.");
+            System.out.println("[McTorControl] Tor successfully launched.");
         } catch (IOException e) {
             if(i<2) {
                 TorManager.extractTor("/tor/tor.exe", torFile.getAbsolutePath(), true);
                 i++;
                 return;
             }
-            throw new RuntimeException("Failed to launch Tor!", e);
+            throw new RuntimeException("[McTorControl] Failed to launch Tor!", e);
         }
+    }
+
+    public static void resetProg() {
+        ConnectScreen.progress = 0;
+        ConnectScreen.message = "";
     }
 
     public static void authControl() {
@@ -143,7 +151,7 @@ public class TorManager {
             out.println("SIGNAL SHUTDOWN");
             final String resp = in.readLine();
             if(resp.contains("250")) {
-                ConnectScreen.progress = 0;
+                resetProg();
                 socket.close();
                 if(remHook)
                     Runtime.getRuntime().removeShutdownHook(torStopThread);

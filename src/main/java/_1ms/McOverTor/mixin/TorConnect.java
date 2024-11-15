@@ -23,6 +23,8 @@ package _1ms.McOverTor.mixin;
 import _1ms.McOverTor.manager.SettingsMgr;
 import _1ms.McOverTor.screen.ConnectScreen;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelDuplexHandler;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.proxy.Socks5ProxyHandler;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -35,7 +37,15 @@ import java.net.InetSocketAddress;
 public abstract class TorConnect {
     @Inject(method = "initChannel(Lio/netty/channel/Channel;)V", at = @At("HEAD"))
     private void connect(Channel channel, CallbackInfo ci) {
-        if(ConnectScreen.progress == 100 || SettingsMgr.get("torOnly"))
+        if(ConnectScreen.progress == 100 || SettingsMgr.get("torOnly")) {
             channel.pipeline().addFirst(new Socks5ProxyHandler(new InetSocketAddress("127.0.0.1", 9050)));
+            channel.pipeline().addLast("exceptionHandler", new ChannelDuplexHandler() {
+                @Override
+                public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+                    ctx.close(); //Avoid internal exceptions when it doesn't connect.
+                }
+            });
+        }
+
     }
 }
