@@ -116,13 +116,11 @@ public class ConnectScreen extends Screen {
         }
         closeButton.render(context, mouseX, mouseY, delta);
     }
+
     public void renderProgressBar(DrawContext context, int x, int y, int barWidth, int barHeight) {
-        context.drawBorder(x - 1, y - 1, barWidth + 2, barHeight + 2, 0xFFFFFFFF);
+        context.drawBorder(x - 2, y - 2, barWidth + 4, barHeight + 4, 0xFFFFFFFF);
         context.fill(x, y, x + (progress * 2), y + barHeight, 0xFF00FF00);
         context.fill(x + (progress * 2), y, x + barWidth, y + barHeight, 0x80000000);
     }
-
-
-
 
 }

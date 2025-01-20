@@ -25,10 +25,13 @@ import _1ms.McOverTor.screen.ConnectScreen;
 
 import java.io.*;
 import java.net.Socket;
+import java.nio.file.Files;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import static _1ms.McOverTor.Main.confPath;
+import static _1ms.McOverTor.Main.isLinux;
 
 public class TorManager {
     private static Socket socket;
@@ -36,7 +39,7 @@ public class TorManager {
     private static BufferedReader in;
     private static Process torP;
     private static Thread torStopThread;
-    static final File torFile = new File(System.getProperty("java.io.tmpdir"), "tor.exe");
+    static final File torFile = isLinux ? new File(confPath, "tor") : new File(System.getProperty("java.io.tmpdir"), "tor.exe");
 
     public static void extractTor(String input, String output, boolean launch) {
         System.out.println("[McTorControl] Extracting...");
@@ -58,7 +61,7 @@ public class TorManager {
 
     public static void killTor(final boolean relaunch) {
         try {
-            final Process pb = new ProcessBuilder("taskkill", "/F", "/IM", "tor.exe").start();
+            final Process pb = isLinux ? new ProcessBuilder("killall", "tor").start() : new ProcessBuilder("taskkill", "/F", "/IM", "tor.exe").start();
             if(torStopThread != null)
                 Runtime.getRuntime().removeShutdownHook(torStopThread);
             pb.waitFor();
@@ -74,7 +77,16 @@ public class TorManager {
 
     private static int i = 0;
     public static void launchTor() {
+        if(isLinux){
+            try {
+                Files.setPosixFilePermissions(torFile.toPath(), PosixFilePermissions.fromString("rwxr-xr-x")); //Perm so ./tor can be ran
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to set Tor PosixFilePermissions.", e);
+            }
+        }
         final ProcessBuilder pb = new ProcessBuilder(torFile.getAbsolutePath(), "-f", confPath+File.separator+"torrc", "--DataDirectory", confPath);
+        if(isLinux)
+            pb.environment().put("LD_LIBRARY_PATH", ":"+torFile.getParent());
         final ExecutorService executor = Executors.newSingleThreadExecutor();
         try {
             torP = pb.start();
@@ -87,7 +99,7 @@ public class TorManager {
                     } catch (IOException e) {
                         throw new RuntimeException("[McTorControl] Tor client runtime error.",e);
                     }
-                    if(line.contains("WSAEADDRINUSE")) {
+                    if(line.contains(isLinux ? "Address already in use" : "WSAEADDRINUSE")) {
                         killTor(true);
                         break;
                     }
@@ -111,7 +123,7 @@ public class TorManager {
             }
             System.out.println("[McTorControl] Tor successfully launched.");
         } catch (IOException e) {
-            if(i<2) {
+            if(i<2 && !isLinux) {//Try to extract once in case it got deleted from the temp folder on windows.
                 TorManager.extractTor("/tor/tor.exe", torFile.getAbsolutePath(), true);
                 i++;
                 return;
@@ -153,8 +165,10 @@ public class TorManager {
             if(resp.contains("250")) {
                 resetProg();
                 socket.close();
-                if(remHook)
+                if(remHook) {
                     Runtime.getRuntime().removeShutdownHook(torStopThread);
+                    torStopThread = null;
+                }
                 System.out.println("[McTorControl] Tor has been closed.");
                 return;
             }

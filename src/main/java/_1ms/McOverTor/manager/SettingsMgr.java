@@ -20,6 +20,7 @@
 
 package _1ms.McOverTor.manager;
 
+import _1ms.McOverTor.Main;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 
@@ -41,10 +42,12 @@ public class SettingsMgr {
         if(first) {
             settings.put("torOnly", false);
             settings.put("separateStreams", false);
+            settings.put("isRight", false);
+            settings.put("isUpper", false);
         }
         try (FileWriter writer = new FileWriter(settConf)) {
             // Write version header
-            writer.write("CONFIG_VERSION: 1.0\n");
+            writer.write("CONFIG_VERSION: 1.1\n");
             // Write JSON config
             gson.toJson(settings, writer);
         } catch (IOException e) {
@@ -58,7 +61,13 @@ public class SettingsMgr {
             saveConfig(true);
             final ExecutorService unpackTask = Executors.newSingleThreadExecutor();
             unpackTask.submit(() -> {
-                TorManager.extractTor("/tor/tor.exe", TorManager.torFile.getAbsolutePath(), false);
+                TorManager.extractTor(Main.isLinux ? "/tor/lnx/tor" : "/tor/tor.exe", TorManager.torFile.getAbsolutePath(), false);
+                if(Main.isLinux) {
+                    TorManager.extractTor("/tor/lnx/libcrypto.so.3", confPath+File.separator+"libcrypto.so.3", false);
+                    TorManager.extractTor("/tor/lnx/libevent-2.1.so.7", confPath+File.separator+"libevent-2.1.so.7", false);
+                    TorManager.extractTor("/tor/lnx/libssl.so.3", confPath+File.separator+"libssl.so.3", false);
+                    TorManager.extractTor("/tor/lnx/libstdc++.so.6", confPath+File.separator+"libstdc++.so.6", false);
+                }
                 TorManager.extractTor("/tor/geoip", confPath+File.separator+"geoip", false);
                 TorManager.extractTor("/tor/geoip6", confPath+File.separator+"geoip6", false);
             });
@@ -69,16 +78,25 @@ public class SettingsMgr {
     }
 
     public static void flip(String val) {
+        if(val.startsWith("!"))
+            val = val.substring(1);
         settings.replace(val, !settings.get(val));
     }
 
     public static boolean get(String val) {
+        if(val.startsWith("!"))
+            return !settings.get(val.substring(1));
         return settings.get(val);
     }
 
     private static HashMap<String, Boolean> loadConfig() {
         try (final BufferedReader reader = new BufferedReader(new FileReader(settConf))) {
-            System.out.println("[McOverTor] LOADING " +reader.readLine()); // Skip the version line
+            final String version = reader.readLine();
+            if(!version.equals("CONFIG_VERSION: 1.1")) {
+                saveConfig(true);
+                return settings;
+            }
+            System.out.println("[McOverTor] LOADING " + version); // Skip the version line
             return gson.fromJson(reader, new TypeToken<HashMap<String, Boolean>>() {}.getType());
         } catch (IOException e) {
             throw new RuntimeException("[McOverTor] Failed to load config." ,e);

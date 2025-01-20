@@ -20,6 +20,7 @@
 
 package _1ms.McOverTor.mixin;
 
+import _1ms.McOverTor.manager.SettingsMgr;
 import _1ms.McOverTor.manager.TorManager;
 import _1ms.McOverTor.screen.ChangeIPScreen;
 import _1ms.McOverTor.screen.ConnectScreen;
@@ -39,62 +40,24 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import java.lang.reflect.Method;
 import java.util.Objects;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 @Mixin(MultiplayerScreen.class)
 public abstract class MpButtonsAdd extends Screen {
-
-    @Unique
-    private static final Identifier settIcon = Identifier.of("mcovertor", "textures/settings.png");
-
     @Unique
     private static final ButtonWidget newIpButton = ButtonWidget.builder(
             Text.literal("Change IP"),
-            (buttonWidget) -> Objects.requireNonNull(MinecraftClient.getInstance()).setScreen(new ChangeIPScreen())
+            buttonWidget -> Objects.requireNonNull(MinecraftClient.getInstance()).setScreen(new ChangeIPScreen())
     ).dimensions(0, 0, 95, 21).build();
 
-    @Unique
-    private static int i = 0;
     @Unique
     private static final ButtonWidget settButton = new ButtonWidget(0, 0, 26, 26, Text.empty(), button -> Objects.requireNonNull(MinecraftClient.getInstance()).setScreen(new SettingsScreen()), Supplier::get) {
         @Override
         public void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
             super.renderWidget(context, mouseX, mouseY, delta);
-            try {
-                //context.drawTexture(RenderLayer::getGuiTextured, settIcon, this.getX() + 2, this.getY() + 2, 0, 0, 22, 21, 22, 21);
-                // Use the 1.21.3 method if available (Using runtime intermediary function name of the above)
-                Method drawTextureMethod = DrawContext.class.getMethod(
-                        "method_25290",
-                        Function.class, Identifier.class, int.class, int.class, float.class, float.class, int.class, int.class, int.class, int.class
-                );
-                drawTextureMethod.invoke(
-                        context,
-                        (Function<Identifier, RenderLayer>) id -> RenderLayer.getGuiTextured(settIcon),
-                        settIcon, this.getX() + 2, this.getY() + 2,
-                        0.0f, 0.0f, 22, 21, 22, 21
-                );
-            } catch (ReflectiveOperationException e) {
-                // Fall back to 1.21.1
-                try {
-                    Method drawTextureMethod = DrawContext.class.getMethod(
-                            "method_25290",
-                            Identifier.class, int.class, int.class, float.class, float.class, int.class, int.class, int.class, int.class
-                    );
-                    drawTextureMethod.invoke(
-                            context,
-                            settIcon, this.getX() + 2, this.getY() + 2,
-                            0, 0, 22, 21, 22, 21
-                    );
-                } catch (ReflectiveOperationException ex) {
-                    if(i==0) {
-                        System.out.println("[McOverTor] Error while trying to render settings btn icon in compatibility mode: " + ex);
-                        i++;
-                    }
-                }
-            }
+            final Identifier settIcon = Identifier.of("mcovertor", "textures/settings.png");
+            context.drawTexture(RenderLayer::getGuiTextured, settIcon, this.getX() + 2, this.getY() + 2, 0, 0, 22, 21, 22, 21);
         }
     };
 
@@ -104,11 +67,11 @@ public abstract class MpButtonsAdd extends Screen {
 
     @Inject(method = "init()V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/multiplayer/MultiplayerScreen;updateButtonActivationStates()V"))
     public void multiplayerGuiOpen(CallbackInfo ci) {
-        newIpButton.setPosition(10, this.height - 30);
-        //settingsB.setPosition(110, this.height -50);
-        settButton.setPosition(107, this.height -45);
-        if(i!=0)
-            i--;
+        final boolean isUpper = SettingsMgr.get("isUpper");
+        final boolean isRight = SettingsMgr.get("isRight");
+
+        newIpButton.setPosition(calcX(isUpper, isRight, 205, 105, 110, 10), isUpper ? 5 : this.height - 30);
+        settButton.setPosition(calcX(isUpper, isRight, 235, 133, 210, 107), isUpper ? 3 : this.height -45);
 
         newIpButton.active = ConnectScreen.progress >= 100;
         newIpButton.setFocused(false);
@@ -116,7 +79,7 @@ public abstract class MpButtonsAdd extends Screen {
 
         this.addDrawableChild(ButtonWidget.builder(
                 Text.literal("Tor: " + (ConnectScreen.progress == 100 ? "§aON" : "§cOFF")),
-                (buttonWidget) -> {
+                buttonWidget -> {
                     if (ConnectScreen.progress < 100) {
                         Objects.requireNonNull(MinecraftClient.getInstance()).setScreen(new ConnectScreen());
                         TorManager.launchTor();
@@ -125,8 +88,16 @@ public abstract class MpButtonsAdd extends Screen {
                         Objects.requireNonNull(MinecraftClient.getInstance()).setScreen(new MultiplayerScreen(new TitleScreen()));
                     }
                 }
-        ).dimensions(10, this.height - 55, 95, 21).build()); //We init this here otherwise it'll stay focused for some reason after turning it off.
+        ).dimensions(isRight ? this.width-105 : 10, isUpper ? 5 : this.height - 55, 95, 21).build()); //We init this here otherwise it'll stay focused for some reason after turning it off.
         this.addDrawableChild(newIpButton);
         this.addDrawableChild(settButton);
+    }
+
+    @Unique
+    private int calcX(boolean isUpper, boolean isRight, int upRightOff, int lowRightOff, int upLeftOff, int lowLeftOff) {
+        if (isRight)
+            return isUpper ? this.width - upRightOff : this.width - lowRightOff;
+        else
+            return isUpper ? upLeftOff : lowLeftOff;
     }
 }

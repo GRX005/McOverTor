@@ -34,7 +34,6 @@ public class SettCheckBox extends ClickableWidget {
         super(x, y, 16, 15, text);
         this.val = val;
     }
-
     @Override
     public void onClick(double mouseX, double mouseY) {
         SettingsMgr.flip(val);
@@ -79,7 +78,5 @@ public class SettCheckBox extends ClickableWidget {
     protected void appendClickableNarrations(NarrationMessageBuilder builder) {
         this.appendDefaultNarrations(builder);
     }
-
-
 
 }

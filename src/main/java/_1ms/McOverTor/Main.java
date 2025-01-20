@@ -34,9 +34,13 @@ import java.io.IOException;
 public class Main implements ModInitializer {
 
     public static final String confPath = FabricLoader.getInstance().getGameDir().resolve("mcovertor").toString();
-
+    public static final boolean isLinux = System.getProperty("os.name").toLowerCase().contains("linux");
     @Override
     public void onInitialize() {
+        if(isLinux)
+            System.out.println("Running on Linux!");
+        else
+            System.out.println("Running on Windows!");
         checkAndCreateConfDir();
         SettingsMgr.check();
         final File torrc = new File(confPath, "torrc");
@@ -47,7 +51,7 @@ public class Main implements ModInitializer {
                     return;
                 }
                 try(FileWriter fw = new FileWriter(torrc)) {
-                    fw.write("ControlPort 9051\nHashedControlPassword 16:5CC34EC2B16C1DA260CE40B1D139DA73AAFAFF5EA46E17D2E20191BA76\nGeoIPFile \"mcovertor\\\\geoip\"\nGeoIPv6File \"mcovertor\\\\geoip6\"");
+                    fw.write("ControlPort 9051\nHashedControlPassword 16:5CC34EC2B16C1DA260CE40B1D139DA73AAFAFF5EA46E17D2E20191BA76\nGeoIPFile \"mcovertor"+File.separator.replace("\\", "\\\\")+"geoip\"\nGeoIPv6File \"mcovertor"+File.separator.replace("\\", "\\\\")+"geoip6\"");
                 }
                 System.out.println("[McOverTor] Config file created.");
             } catch (IOException e) {

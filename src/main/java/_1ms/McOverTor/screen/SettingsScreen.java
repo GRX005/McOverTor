@@ -30,13 +30,18 @@ import net.minecraft.client.gui.tooltip.Tooltip;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.text.Text;
 
+import java.awt.*;
 import java.util.Objects;
 
 public class SettingsScreen extends Screen {
 
     private static final SettCheckBox preventNonTor = new SettCheckBox(0, 0, Text.literal("Prevent non-Tor connections"), "torOnly");
     private static final SettCheckBox sepStr = new SettCheckBox(0, 0, Text.literal("Stream separation"), "separateStreams");
-    private static final ButtonWidget doneBtn = ButtonWidget.builder(Text.literal("Done"), (btn) -> CloseR()).dimensions(0,0,120, 20).build();
+    private static final SettCheckBox left = new SettCheckBox(0, 0, Text.literal("Left"), "!isRight");
+    private static final SettCheckBox right = new SettCheckBox(0, 0, Text.literal("Right"), "isRight");
+    private static final SettCheckBox upper = new SettCheckBox(0, 0, Text.literal("Upper"), "isUpper");
+    private static final SettCheckBox lower = new SettCheckBox(0, 0, Text.literal("Lower"), "!isUpper");
+    private static final ButtonWidget doneBtn = ButtonWidget.builder(Text.literal("Done"), btn -> CloseR()).dimensions(0,0,120, 20).build();
 
     public SettingsScreen() {
         super(Text.literal("McOverTor Settings"));
@@ -54,10 +59,18 @@ public class SettingsScreen extends Screen {
          preventNonTor.setPosition(x-30, y-100);
          sepStr.setPosition(x-30, y-75);
          doneBtn.setPosition(x+40, y+200);
+         left.setPosition(x-30, y-30);
+         right.setPosition(x+40, y-30);
+         upper.setPosition(x+115, y-30);
+         lower.setPosition(x+182, y-30);
 
          this.addSelectableChild(preventNonTor);
          this.addSelectableChild(sepStr);
          this.addSelectableChild(doneBtn);
+         this.addSelectableChild(left);
+         this.addSelectableChild(right);
+         this.addSelectableChild(upper);
+         this.addSelectableChild(lower);
      }
 
      @Override
@@ -77,6 +90,13 @@ public class SettingsScreen extends Screen {
         preventNonTor.render(context, mouseX, mouseY, delta);
         sepStr.render(context, mouseX, mouseY, delta);
         doneBtn.render(context, mouseX, mouseY, delta);
+        context.drawCenteredTextWithShadow(MinecraftClient.getInstance().textRenderer, Text.literal("Tor Buttons position:"), (this.width - 200) / 2+100, (this.height / 2 - 10)-50, 0xFFFFFF);
+        left.render(context, mouseX, mouseY, delta);
+        right.render(context, mouseX, mouseY, delta);
+        upper.render(context, mouseX, mouseY, delta);
+        lower.render(context, mouseX, mouseY, delta);
+
+        context.drawVerticalLine(this.width/2, this.height/2-10, this.height/2-50, Color.WHITE.getRGB());
     }
 
 }
