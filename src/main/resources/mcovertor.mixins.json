@@ -4,7 +4,10 @@
   "package": "_1ms.McOverTor.mixin",
   "compatibilityLevel": "JAVA_21",
   "client": [
+    "ChInit",
+    "FixPing",
     "MpButtonsAdd",
+    "NettyNoDNS",
     "StreamSeparate",
     "TorConnect"
   ],

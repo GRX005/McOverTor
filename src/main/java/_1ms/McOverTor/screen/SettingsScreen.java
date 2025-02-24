@@ -2,7 +2,7 @@
     This file is part of the McOverTor project, licensed under the
     GNU General Public License v3.0
 
-    Copyright (C) 2024 _1ms
+    Copyright (C) 2024-2025 _1ms
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -11,16 +11,17 @@
 
     This program is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
     GNU General Public License for more details.
 
     You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+    along with this program. If not, see <https://www.gnu.org/licenses/>.
 */
 
 package _1ms.McOverTor.screen;
 
 import _1ms.McOverTor.Main;
+import _1ms.McOverTor.manager.TorOption;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
@@ -34,14 +35,18 @@ import java.awt.*;
 import java.util.Objects;
 
 public class SettingsScreen extends Screen {
-
-    private static final SettCheckBox preventNonTor = new SettCheckBox(0, 0, Text.literal("Prevent non-Tor connections"), "torOnly");
-    private static final SettCheckBox sepStr = new SettCheckBox(0, 0, Text.literal("Stream separation"), "separateStreams");
-    private static final SettCheckBox left = new SettCheckBox(0, 0, Text.literal("Left"), "!isRight");
-    private static final SettCheckBox right = new SettCheckBox(0, 0, Text.literal("Right"), "isRight");
-    private static final SettCheckBox upper = new SettCheckBox(0, 0, Text.literal("Upper"), "isUpper");
-    private static final SettCheckBox lower = new SettCheckBox(0, 0, Text.literal("Lower"), "!isUpper");
-    private static final ButtonWidget doneBtn = ButtonWidget.builder(Text.literal("Done"), btn -> CloseR()).dimensions(0,0,120, 20).build();
+    private record Buttons(SettCheckBox preventNonTor, SettCheckBox sepStr, SettCheckBox left, SettCheckBox right, SettCheckBox upper, SettCheckBox lower,
+                           SettCheckBox torDNS, ButtonWidget doneBtn){}
+    private static final Buttons btns = new Buttons(
+            new SettCheckBox(0, 0, Text.literal("Prevent non-Tor connections"), TorOption.torOnly),
+            new SettCheckBox(0, 0, Text.literal("Stream separation"), TorOption.sepStreams),
+            new SettCheckBox(0, 0, Text.literal("Left"), "!"+TorOption.isRight),
+            new SettCheckBox(0, 0, Text.literal("Right"), TorOption.isRight),
+            new SettCheckBox(0, 0, Text.literal("Upper"), TorOption.isUpper),
+            new SettCheckBox(0, 0, Text.literal("Lower"), "!"+TorOption.isUpper),
+            new SettCheckBox(0,0, Text.literal("Resolve DNS using Tor"), TorOption.useTorDNS),
+            ButtonWidget.builder(Text.literal("Done"), btn -> CloseR()).dimensions(0, 0, 120, 20).build()
+    );
 
     public SettingsScreen() {
         super(Text.literal("McOverTor Settings"));
@@ -50,27 +55,31 @@ public class SettingsScreen extends Screen {
      @Override
      protected void init() {
          super.init();
-         doneBtn.setFocused(false);
-         sepStr.setTooltip(Tooltip.of(Text.literal("Get a new IP every time you join a server.")));
+         btns.doneBtn.setFocused(false);
+         btns.preventNonTor.setTooltip(Tooltip.of(Text.literal("Makes it so you cannot ping or connect to servers if Tor isn't turned on, to prevent accidents.")));
+         btns.sepStr.setTooltip(Tooltip.of(Text.literal("Get a new IP every time you join a server.")));
+         btns.torDNS.setTooltip(Tooltip.of(Text.literal("§aPros: §fDNS queries won't leak your IP, more secure.\nYou can connect to .onion server addresses.\n§cCons: §fTor might fail to resolve some domains, so it is turned off by default.")));
 
          final int x = (this.width - 200) / 2;
          final int y = this.height / 2 - 10;
 
-         preventNonTor.setPosition(x-30, y-100);
-         sepStr.setPosition(x-30, y-75);
-         doneBtn.setPosition(x+40, y+200);
-         left.setPosition(x-30, y-30);
-         right.setPosition(x+40, y-30);
-         upper.setPosition(x+115, y-30);
-         lower.setPosition(x+182, y-30);
+         btns.preventNonTor.setPosition(x-30, y-100);
+         btns.sepStr.setPosition(x-30, y-75);
+         btns.doneBtn.setPosition(x+40, y+200);
+         btns.left.setPosition(x-30, y-30);
+         btns.right.setPosition(x+35, y-30);
+         btns.upper.setPosition(x+115, y-30);
+         btns.lower.setPosition(x+182, y-30);
+         btns.torDNS.setPosition(x-30, y+10);
 
-         this.addSelectableChild(preventNonTor);
-         this.addSelectableChild(sepStr);
-         this.addSelectableChild(doneBtn);
-         this.addSelectableChild(left);
-         this.addSelectableChild(right);
-         this.addSelectableChild(upper);
-         this.addSelectableChild(lower);
+         this.addSelectableChild(btns.preventNonTor);
+         this.addSelectableChild(btns.sepStr);
+         this.addSelectableChild(btns.doneBtn);
+         this.addSelectableChild(btns.left);
+         this.addSelectableChild(btns.right);
+         this.addSelectableChild(btns.upper);
+         this.addSelectableChild(btns.lower);
+         this.addSelectableChild(btns.torDNS);
      }
 
      @Override
@@ -87,14 +96,15 @@ public class SettingsScreen extends Screen {
         super.render(context, mouseX, mouseY, delta);
 
         Main.renderWindow(context, (this.width - 200) / 2-50, this.height / 2 - 130, 300, 350, "McOverTor Settings");
-        preventNonTor.render(context, mouseX, mouseY, delta);
-        sepStr.render(context, mouseX, mouseY, delta);
-        doneBtn.render(context, mouseX, mouseY, delta);
+        btns.preventNonTor.render(context, mouseX, mouseY, delta);
+        btns.sepStr.render(context, mouseX, mouseY, delta);
+        btns.doneBtn.render(context, mouseX, mouseY, delta);
         context.drawCenteredTextWithShadow(MinecraftClient.getInstance().textRenderer, Text.literal("Tor Buttons position:"), (this.width - 200) / 2+100, (this.height / 2 - 10)-50, 0xFFFFFF);
-        left.render(context, mouseX, mouseY, delta);
-        right.render(context, mouseX, mouseY, delta);
-        upper.render(context, mouseX, mouseY, delta);
-        lower.render(context, mouseX, mouseY, delta);
+        btns.left.render(context, mouseX, mouseY, delta);
+        btns.right.render(context, mouseX, mouseY, delta);
+        btns.upper.render(context, mouseX, mouseY, delta);
+        btns.lower.render(context, mouseX, mouseY, delta);
+        btns.torDNS.render(context, mouseX, mouseY, delta);
 
         context.drawVerticalLine(this.width/2, this.height/2-10, this.height/2-50, Color.WHITE.getRGB());
     }
