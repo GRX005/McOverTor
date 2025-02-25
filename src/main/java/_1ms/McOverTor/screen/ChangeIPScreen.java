@@ -33,7 +33,7 @@ import net.minecraft.text.Text;
 import java.awt.*;
 
 public class ChangeIPScreen extends Screen {
-    private static final ButtonWidget closeButton = ButtonWidget.builder(Text.literal("Okay"), (buttonWidget) -> RealClose())
+    private static final ButtonWidget closeButton = ButtonWidget.builder(Text.literal("Okay"), buttonWidget -> realClose())
             .dimensions(0, 0, 120, 20)
             .build();
 
@@ -48,10 +48,10 @@ public class ChangeIPScreen extends Screen {
 
     @Override
     public void close() {
-        RealClose();
+        realClose();
     }
 
-    public static void RealClose() {
+    private static void realClose() {
         MinecraftClient.getInstance().setScreen(new MultiplayerScreen(new TitleScreen()));
         status = 0;
     }

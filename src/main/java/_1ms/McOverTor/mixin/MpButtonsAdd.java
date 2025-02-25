@@ -20,6 +20,7 @@
 
 package _1ms.McOverTor.mixin;
 
+import _1ms.McOverTor.Main;
 import _1ms.McOverTor.manager.SettingsMgr;
 import _1ms.McOverTor.manager.TorManager;
 import _1ms.McOverTor.manager.TorOption;
@@ -33,6 +34,8 @@ import net.minecraft.client.gui.screen.TitleScreen;
 import net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.texture.NativeImage;
+import net.minecraft.client.texture.NativeImageBackedTexture;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import org.spongepowered.asm.mixin.Mixin;
@@ -41,9 +44,14 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import java.io.InputStream;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
 import java.util.Objects;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
+import static _1ms.McOverTor.Main.logger;
 import static _1ms.McOverTor.manager.TorManager.progress;
 
 @Mixin(MultiplayerScreen.class)
@@ -54,16 +62,57 @@ abstract class MpButtonsAdd extends Screen {
             buttonWidget -> Objects.requireNonNull(MinecraftClient.getInstance()).setScreen(new ChangeIPScreen())
     ).dimensions(0, 0, 95, 21).build();
 
+
+    @Unique
+    private static Identifier settIcon;
+
     @Unique
     private static final ButtonWidget settButton = new ButtonWidget(0, 0, 26, 26, Text.empty(), button -> Objects.requireNonNull(MinecraftClient.getInstance()).setScreen(new SettingsScreen()), Supplier::get) {
+
         @Override
         public void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
             super.renderWidget(context, mouseX, mouseY, delta);
-            final Identifier settIcon = Identifier.of("mcovertor", "textures/settings.png");
-            context.drawTexture(RenderLayer::getGuiTextured, settIcon, this.getX() + 2, this.getY() + 2, 0, 0, 22, 21, 22, 21);
+            try {
+                if(settIcon == null) { //Load at first render try, once.
+                    settIcon = reflectIdent();
+                    try (InputStream inputStream = Main.class.getClassLoader().getResourceAsStream("assets/mcovertor/textures/settings.png")) {
+                        assert inputStream != null;
+                        MinecraftClient.getInstance().getTextureManager().registerTexture(settIcon, new NativeImageBackedTexture(NativeImage.read(inputStream)));
+                    } catch (Exception e) {
+                        logger.error("Error while loading icon native image.");
+                        throw new RuntimeException(e);
+                    }
+                }
+                //context.drawTexture(RenderLayer::getGuiTextured, settIcon, this.getX() + 2, this.getY() + 2, 0, 0, 22, 21, 22, 21);
+                // Use the 1.21.3 method if available (Using runtime intermediary function name of the above)
+                Method drawTextureMethod = DrawContext.class.getMethod(
+                        "method_25290",
+                        Function.class, Identifier.class, int.class, int.class, float.class, float.class, int.class, int.class, int.class, int.class
+                );
+                drawTextureMethod.invoke(
+                        context,
+                        (Function<Identifier, RenderLayer>) id -> RenderLayer.getGuiTextured(settIcon),
+                        settIcon, this.getX() + 2, this.getY() + 2,
+                        0.0f, 0.0f, 22, 21, 22, 21
+                );
+            } catch (ReflectiveOperationException e) {
+                // Fall back to 1.21.1
+                try {
+                    Method drawTextureMethod = DrawContext.class.getMethod(
+                            "method_25290",
+                            Identifier.class, int.class, int.class, float.class, float.class, int.class, int.class, int.class, int.class
+                    );
+                    drawTextureMethod.invoke(
+                            context,
+                            settIcon, this.getX() + 2, this.getY() + 2,
+                            0, 0, 22, 21, 22, 21
+                    );
+                } catch (ReflectiveOperationException ignored) {
+
+                }
+            }
         }
     };
-
     protected MpButtonsAdd(Text title) {
         super(title);
     }
@@ -81,19 +130,20 @@ abstract class MpButtonsAdd extends Screen {
         settButton.setFocused(false);
 
         this.addDrawableChild(ButtonWidget.builder(
-                Text.literal("Tor: " + (progress == 100 ? "§aON" : "§cOFF")),
-                buttonWidget -> {
-                    if (progress < 100) {
-                        Objects.requireNonNull(MinecraftClient.getInstance()).setScreen(new TorScreen());
-                        TorManager.launchTor();
-                    } else {
-                        TorManager.exitTor(true);
-                        Objects.requireNonNull(MinecraftClient.getInstance()).setScreen(new MultiplayerScreen(new TitleScreen()));
-                    }
-                }
-        ).dimensions(isRight ? this.width-105 : 10, isUpper ? 5 : this.height - 55, 95, 21).build()); //We init this here otherwise it'll stay focused for some reason after turning it off.
+                Text.literal("Tor: " + (progress == 100 ? "§aON" : "§cOFF")), MpButtonsAdd::TorBtnFunc).dimensions(isRight ? this.width-105 : 10, isUpper ? 5 : this.height - 55, 95, 21).build()); //We init this here otherwise it'll stay focused for some reason after turning it off.
         this.addDrawableChild(newIpButton);
         this.addDrawableChild(settButton);
+    }
+
+    @Unique
+    private static void TorBtnFunc(ButtonWidget ignored) {
+        if (progress < 100) {
+            Objects.requireNonNull(MinecraftClient.getInstance()).setScreen(new TorScreen());
+            TorManager.launchTor();
+        } else {
+            TorManager.exitTor(true);
+            Objects.requireNonNull(MinecraftClient.getInstance()).setScreen(new MultiplayerScreen(new TitleScreen()));
+        }
     }
 
     @Unique
@@ -103,4 +153,18 @@ abstract class MpButtonsAdd extends Screen {
         else
             return isUpper ? upLeftOff : lowLeftOff;
     }
+
+    //Reflection to get private contructor, done this way as the .of() func's intermediary changes below 1.21.
+    @Unique
+    private static Identifier reflectIdent() {
+        try {
+            Constructor<?> identConst = Identifier.class.getDeclaredConstructor(String.class, String.class);
+            identConst.setAccessible(true);
+            return (Identifier) identConst.newInstance("mcovertor", "textures/settings.png");
+        } catch (ReflectiveOperationException e) {
+            logger.error("Identifier getter reflection error.");
+            throw new RuntimeException(e);
+        }
+    }
+
 }

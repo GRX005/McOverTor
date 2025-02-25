@@ -36,7 +36,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 
 public class Main implements ModInitializer {
-
     public static final String confPath = FabricLoader.getInstance().getGameDir().resolve("mcovertor").toString();
     public static final boolean isLinux = System.getProperty("os.name").toLowerCase().contains("linux");
     public static final ThreadLocal<ServerAddress> connIP = new ThreadLocal<>();
@@ -47,6 +46,7 @@ public class Main implements ModInitializer {
             logger.info("Linux detected!");
         else
             logger.info("Windows detected!");
+
         checkAndCreateConfDir();
         SettingsMgr.initAndCheckConf();
         final File torrc = new File(confPath, "torrc");

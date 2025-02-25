@@ -39,17 +39,11 @@ public class TorScreen extends Screen {
     //private static final Identifier IMAGE_ID = Identifier.of("mcovertor", "tor");
 
     public static boolean fail = false;
-    private static final ButtonWidget closeButton = ButtonWidget.builder(Text.literal("Okay"), (buttonWidget) -> realClose())
+    private static final ButtonWidget closeButton = ButtonWidget.builder(Text.literal("Okay"), Btn -> realClose())
             .dimensions(0, 0, 120, 20).build();
 
-    private static final ButtonWidget cancelButton = ButtonWidget.builder(Text.literal("Cancel"), (buttonWidget) -> {
-        if(progress < 5)
-            TorManager.killTor(false);
-        else
-            TorManager.exitTor(true);
-        realClose();
-        fail = false;
-    }).dimensions(0, 0, 120, 20).build();
+    private static final ButtonWidget cancelButton = ButtonWidget.builder(Text.literal("Cancel"), TorScreen::cancelBtnFunc)
+            .dimensions(0, 0, 120, 20).build();
 
     public TorScreen() {
         super(Text.literal("Connect to Tor"));
@@ -58,9 +52,8 @@ public class TorScreen extends Screen {
     @Override
     protected void init() {
         super.init();
-
-        closeButton.setFocused(false);
         cancelButton.setFocused(false);
+        closeButton.setFocused(false);
         closeButton.setPosition(this.width / 2 - 60, this.height / 2 + 30);
         if(progress < 100) {
             this.addSelectableChild(cancelButton);
@@ -69,15 +62,27 @@ public class TorScreen extends Screen {
         }
         this.addSelectableChild(closeButton);
     }
+//Shouldn't be closed like this, while it's loading.
+    @Override
+    public boolean shouldCloseOnEsc() {
+        return progress == 100;
+    }
 
     @Override
     public void close() {
         realClose();
     }
 
-    public static void realClose() {
-        Objects.requireNonNull(MinecraftClient.getInstance()).setScreen(new MultiplayerScreen(new TitleScreen()));
+    private static void cancelBtnFunc(ButtonWidget ignored) {
+        if(progress < 5)
+            TorManager.killTor(false);
+        else
+            TorManager.exitTor(true);
+        realClose();
+        fail = false;
     }
+
+    private static void realClose() { Objects.requireNonNull(MinecraftClient.getInstance()).setScreen(new MultiplayerScreen(new TitleScreen())); }
     int i = 0;
 
     @Override
@@ -112,7 +117,7 @@ public class TorScreen extends Screen {
             return;
         }
         context.drawCenteredTextWithShadow(this.textRenderer, Text.literal("Successfully connected to Tor!"), xhalf, yhalf - 60, Color.GREEN.getRGB());
-        if(i == 0) {
+        if(i == 0) {//Only add the btn once in the given instance, don't spam on render
             this.remove(cancelButton);
             this.addSelectableChild(closeButton);
             i++;
