@@ -52,6 +52,7 @@ public class Main implements ModInitializer {
         final File torrc = new File(confPath, "torrc");
         if(!torrc.exists())
             Thread.ofVirtual().name("ConfigWriter").start(()->createTorConf(torrc));
+        //LocationMgr.getCtr();
         logger.info("McOverTor Loaded!");
     }
     //Make mcovertor folder in .minecraft if it doesnt exist

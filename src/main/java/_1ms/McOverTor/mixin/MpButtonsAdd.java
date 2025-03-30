@@ -67,6 +67,33 @@ abstract class MpButtonsAdd extends Screen {
     private static Identifier settIcon;
 
     @Unique
+    private static NativeImageBackedTexture reflectTexture(InputStream io){
+        NativeImage image;
+        try {//READ img
+            image = NativeImage.read(io);
+        } catch (Exception e) {
+            logger.error("Failed to read settings IMG.");
+            throw new RuntimeException(e);
+        }
+        try {
+            // Try the modern constructor: Supplier<String> and NativeImage
+            Constructor<?> constructor = NativeImageBackedTexture.class.getConstructor(Supplier.class, NativeImage.class);
+            return (NativeImageBackedTexture) constructor.newInstance((Supplier<String>)() -> "TorSettingsIcon", image);
+        } catch (NoSuchMethodException e) {
+            // Older version: only NativeImage parameter
+            try {
+                Constructor<?> constructor = NativeImageBackedTexture.class.getConstructor(NativeImage.class);
+                return (NativeImageBackedTexture) constructor.newInstance(image);
+                // Use 'texture' as needed
+            } catch (Exception ex) {
+                throw new RuntimeException("Failed to create NativeImageBackedTexture with one parameter", ex);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to create NativeImageBackedTexture", e);
+        }
+    }
+
+    @Unique
     private static final ButtonWidget settButton = new ButtonWidget(0, 0, 26, 26, Text.empty(), button -> Objects.requireNonNull(MinecraftClient.getInstance()).setScreen(new SettingsScreen()), Supplier::get) {
 
         @Override
@@ -77,7 +104,7 @@ abstract class MpButtonsAdd extends Screen {
                     settIcon = reflectIdent();
                     try (InputStream inputStream = Main.class.getClassLoader().getResourceAsStream("assets/mcovertor/textures/settings.png")) {
                         assert inputStream != null;
-                        MinecraftClient.getInstance().getTextureManager().registerTexture(settIcon, new NativeImageBackedTexture(NativeImage.read(inputStream)));
+                        MinecraftClient.getInstance().getTextureManager().registerTexture(settIcon, reflectTexture(inputStream));
                     } catch (Exception e) {
                         logger.error("Error while loading icon native image.");
                         throw new RuntimeException(e);
