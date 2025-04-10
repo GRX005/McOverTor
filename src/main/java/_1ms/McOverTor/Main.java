@@ -20,6 +20,7 @@
 
 package _1ms.McOverTor;
 
+import _1ms.McOverTor.manager.LocationMgr;
 import _1ms.McOverTor.manager.SettingsMgr;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.loader.api.FabricLoader;

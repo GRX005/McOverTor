@@ -24,9 +24,10 @@ import _1ms.McOverTor.Main;
 import _1ms.McOverTor.manager.SettingsMgr;
 import _1ms.McOverTor.manager.TorManager;
 import _1ms.McOverTor.manager.TorOption;
-import _1ms.McOverTor.screen.ChangeIPScreen;
-import _1ms.McOverTor.screen.SettingsScreen;
-import _1ms.McOverTor.screen.TorScreen;
+import _1ms.McOverTor.screen.ChangeIP;
+import _1ms.McOverTor.screen.Region;
+import _1ms.McOverTor.screen.Settings;
+import _1ms.McOverTor.screen.TorConnect;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
@@ -57,11 +58,10 @@ import static _1ms.McOverTor.manager.TorManager.progress;
 @Mixin(MultiplayerScreen.class)
 abstract class MpButtonsAdd extends Screen {
     @Unique
-    private static final ButtonWidget newIpButton = ButtonWidget.builder(
+    private final static ButtonWidget newIpButton = ButtonWidget.builder(
             Text.literal("Change IP"),
-            buttonWidget -> Objects.requireNonNull(MinecraftClient.getInstance()).setScreen(new ChangeIPScreen())
+            buttonWidget -> Objects.requireNonNull(MinecraftClient.getInstance()).setScreen(new ChangeIP())
     ).dimensions(0, 0, 95, 21).build();
-
 
     @Unique
     private static Identifier settIcon;
@@ -94,7 +94,7 @@ abstract class MpButtonsAdd extends Screen {
     }
 
     @Unique
-    private static final ButtonWidget settButton = new ButtonWidget(0, 0, 26, 26, Text.empty(), button -> Objects.requireNonNull(MinecraftClient.getInstance()).setScreen(new SettingsScreen()), Supplier::get) {
+    private static final ButtonWidget settButton = new ButtonWidget(0, 0, 26, 26, Text.empty(), button -> Objects.requireNonNull(MinecraftClient.getInstance()).setScreen(new Settings()), Supplier::get) {
 
         @Override
         public void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
@@ -134,9 +134,7 @@ abstract class MpButtonsAdd extends Screen {
                             settIcon, this.getX() + 2, this.getY() + 2,
                             0, 0, 22, 21, 22, 21
                     );
-                } catch (ReflectiveOperationException ignored) {
-
-                }
+                } catch (ReflectiveOperationException ignored) {}
             }
         }
     };
@@ -160,13 +158,13 @@ abstract class MpButtonsAdd extends Screen {
                 Text.literal("Tor: " + (progress == 100 ? "§aON" : "§cOFF")), MpButtonsAdd::TorBtnFunc).dimensions(isRight ? this.width-105 : 10, isUpper ? 5 : this.height - 55, 95, 21).build()); //We init this here otherwise it'll stay focused for some reason after turning it off.
         this.addDrawableChild(newIpButton);
         this.addDrawableChild(settButton);
+        this.addDrawableChild(ButtonWidget.builder(Text.literal("Regions"), btn->Objects.requireNonNull(MinecraftClient.getInstance()).setScreen(new Region())).build());
     }
 
     @Unique
     private static void TorBtnFunc(ButtonWidget ignored) {
         if (progress < 100) {
-            Objects.requireNonNull(MinecraftClient.getInstance()).setScreen(new TorScreen());
-            TorManager.launchTor();
+            TorManager.startTor();
         } else {
             TorManager.exitTor(true);
             Objects.requireNonNull(MinecraftClient.getInstance()).setScreen(new MultiplayerScreen(new TitleScreen()));

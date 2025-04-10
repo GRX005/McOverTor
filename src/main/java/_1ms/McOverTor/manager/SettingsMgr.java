@@ -36,7 +36,7 @@ public class SettingsMgr {
     private static final String settConf = confPath+File.separator+"config.cfg";
     private static final Gson gson = new Gson();
     private static HashMap<TorOption, Boolean> settings = new HashMap<>();
-    private final static String ver = "CONFIG_VERSION: 1.2";
+    private final static String ver = "CONFIG_VERSION: 1.3";
 
     //Save cfg, and load def settings if needed.
     static void saveConfig(boolean first) {

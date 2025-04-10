@@ -20,5 +20,5 @@
 package _1ms.McOverTor.manager;
 
 public enum TorOption {
-    torOnly, sepStreams, isRight, isUpper, useTorDNS
+    torOnly, sepStreams, isRight, isUpper, useTorDNS, multipleSel, strictRegion
 }

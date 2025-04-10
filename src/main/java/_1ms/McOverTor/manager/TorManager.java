@@ -20,15 +20,19 @@
 
 package _1ms.McOverTor.manager;
 
-import _1ms.McOverTor.screen.TorScreen;
+import _1ms.McOverTor.screen.TorConnect;
+import net.minecraft.client.MinecraftClient;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.*;
 import java.net.Socket;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermissions;
+import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 import static _1ms.McOverTor.Main.confPath;
 import static _1ms.McOverTor.Main.isLinux;
@@ -44,6 +48,14 @@ public class TorManager {
     public static volatile int progress = 0;
     public static volatile String message = "(starting): Starting";
     private static final Logger logger = LogManager.getLogger("McOverTor/TorControl");
+    public static TorConnect connScrn;
+
+    public static void startTor() {
+        TorConnect scrn = new TorConnect();
+        Objects.requireNonNull(MinecraftClient.getInstance()).setScreen(scrn);
+        connScrn = scrn;
+        launchTor();
+    }
 
     //Extract the files located in the plugin to the desired path.
     public static void extractTor(String input, String output, boolean launch) {
@@ -62,28 +74,9 @@ public class TorManager {
                 launchTor();
         });
     }
-    //Forcefully shut down the Tor client when needed.
-    public static void killTor(boolean relaunch) {
-        try {
-            if(torStopThread != null) {
-                Runtime.getRuntime().removeShutdownHook(torStopThread); //Remove shutdown hook as the Tor client is stopped here.
-                torStopThread = null;
-            }
-            if (isLinux)
-                new ProcessBuilder("killall", "tor").start().waitFor();
-            else
-                new ProcessBuilder("taskkill", "/F", "/IM", "tor").start().waitFor();
-            if(relaunch) //If tor was already running on the system before the mod starting it.
-                launchTor();
-            else
-                resetProg();
-            logger.info("Killed already running Tor.");
-        } catch (InterruptedException | IOException ignored) {
-            TorScreen.fail = true;
-        }
-    }
+
     //Multiplatform Tor client launcher, also reads it's output and supplies it to the loading screen, and extracts the client if it's not found in windows.
-    public static void launchTor() {
+    private static void launchTor() {
         if(isLinux){
             try {
                 Files.setPosixFilePermissions(torFile.toPath(), PosixFilePermissions.fromString("rwxr-xr-x")); //Perm so ./tor can be ran
@@ -102,14 +95,15 @@ public class TorManager {
             logger.info("Tor successfully launched.");
         } catch (IOException e) {
             logger.error("Failed to launch Tor!");
-            TorScreen.fail = true;
+            TorConnect.fail = true;
         }
     }
 
-    static void readTorOutput(){
+    private static void readTorOutput(){
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(torP.getInputStream()))) {
             String line;
             while ((line = reader.readLine()) != null) {
+                System.out.println(line);
                 if(line.contains("Address already in use")) { //Kill if already running.
                     killTor(true);
                     break;
@@ -122,24 +116,47 @@ public class TorManager {
                     if (message.contains("(starting)")) //First bootstrapped msg, init control as soon as possible.
                         authControl();
                     if(progress == 100) { //Shut down reader after Tor is Loaded.
-                        logsAdjust();
+                        //logsAdjust();
+                        connScrn.connCallback();
                         break;
                     }
                 }
             }
         } catch (IOException e) {
             logger.error("Error while reading Tor output!");
-            TorScreen.fail = true;
+            TorConnect.fail = true;
         }
     }
 
     //Set the UI to Tor OFF state.
-    static void resetProg() {
+    private static void resetProg() {
         progress = 0;
         message = "(starting): Starting";
     }
+
+    //Forcefully shut down the Tor client when needed.
+    public static void killTor(boolean relaunch) {
+        try {
+            if(torStopThread != null) {
+                Runtime.getRuntime().removeShutdownHook(torStopThread); //Remove shutdown hook as the Tor client is stopped here.
+                torStopThread = null;
+            }
+            if (isLinux)
+                new ProcessBuilder("killall", "tor").start().waitFor();
+            else
+                new ProcessBuilder("taskkill", "/F", "/IM", "tor").start().waitFor();
+            if(relaunch) //If tor was already running on the system before the mod starting it.
+                launchTor();
+            else
+                resetProg();
+            logger.info("Killed already running Tor.");
+        } catch (InterruptedException | IOException ignored) {
+            TorConnect.fail = true;
+        }
+    }
+
     //Connect to the Tor client control port.
-    static void authControl() {
+    private static void authControl() {
         try {
             socket = new Socket("127.0.0.1", 9051);
             out = new PrintWriter(socket.getOutputStream(), true);
@@ -156,7 +173,7 @@ public class TorManager {
             }
         } catch (IOException e) {
             logger.error("Tor couldn't be started, control port auth error.");
-            TorScreen.fail = true;
+            TorConnect.fail = true;
         }
         torP.destroy();
     }
@@ -193,7 +210,7 @@ public class TorManager {
         return 2;
     }
     //Only log errors, otherwise the stdout buffer fills up, it shouldn't throw errors :)
-    static void logsAdjust() {
+    private static void logsAdjust() {
         try {
             out.println("SETCONF Log=\"err\"");
             final String resp = in.readLine();
