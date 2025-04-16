@@ -1,15 +1,4 @@
 .gradle
-.idea/inspectionProfiles
-.idea/modules
-.idea/compiler.xml
-.idea/discord.xml
-.idea/gradle.xml
-.idea/jarRepositories.xml
-.idea/misc.xml
-.idea/modules.xml
-.idea/uiDesigner.xml
-.idea/vcs.xml
-.idea/workspace.xml
-build
+.idea
 gradle
 run
