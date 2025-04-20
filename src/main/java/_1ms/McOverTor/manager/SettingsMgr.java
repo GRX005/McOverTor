@@ -21,19 +21,21 @@
 package _1ms.McOverTor.manager;
 
 import _1ms.McOverTor.Main;
-import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+import org.apache.commons.io.FileUtils;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.HashMap;
 
 import static _1ms.McOverTor.Main.confPath;
 import static _1ms.McOverTor.Main.logger;
 
 public class SettingsMgr {
-    private static final String settConf = confPath+File.separator+"config.cfg";
+    private static final Path settConf = confPath.resolve("config.cfg");
     private static final Gson gson = new Gson();
     private static HashMap<TorOption, Boolean> settings = new HashMap<>();
     private final static String ver = "CONFIG_VERSION: 1.3";
@@ -43,11 +45,8 @@ public class SettingsMgr {
         if(first) //Def values, all false
             for (TorOption opt : TorOption.values())
                 settings.put(opt, false);
-        try (FileWriter writer = new FileWriter(settConf)) {
-            // Write version header
-            writer.write(ver+"\n");
-            // Write JSON config
-            gson.toJson(settings, writer);
+        try {
+            Files.writeString(settConf, ver+System.lineSeparator()+gson.toJson(settings));
         } catch (IOException e) {
             logger.error("Failed to save config.");
             throw new RuntimeException(e);
@@ -55,26 +54,17 @@ public class SettingsMgr {
     }
     //Check if config exists, if not, load default settings, create it, and unpack Tor files, otherwise load it's options to the hashmap
     public static void initAndCheckConf() {
-        Runtime.getRuntime().addShutdownHook(Thread.ofVirtual().name("CfgSave").unstarted(() -> saveConfig(false)));
-        if(Files.notExists(Paths.get(settConf))) {
-            saveConfig(true);
-            AllTorExtract();
+        Runtime.getRuntime().addShutdownHook(Thread.ofVirtual().name("TorCfgSave").unstarted(() -> saveConfig(false)));
+        if(!Files.exists(confPath)) {
+            try { //Create McOverTor dir.
+                Files.createDirectory(confPath);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            reConf();
             return;
         }
         settings = loadConfig();
-    }
-    //Extract all Tor files.
-    static void AllTorExtract() {
-        logger.info("Extracting Tor files...");
-        TorManager.extractTor(Main.isLinux ? "/tor/lnx/tor" : "/tor/tor.exe", TorManager.torFile.getAbsolutePath(), false);
-        if(Main.isLinux) {
-            TorManager.extractTor("/tor/lnx/libcrypto.so.3", confPath+File.separator+"libcrypto.so.3", false);
-            TorManager.extractTor("/tor/lnx/libevent-2.1.so.7", confPath+File.separator+"libevent-2.1.so.7", false);
-            TorManager.extractTor("/tor/lnx/libssl.so.3", confPath+File.separator+"libssl.so.3", false);
-            TorManager.extractTor("/tor/lnx/libstdc++.so.6", confPath+File.separator+"libstdc++.so.6", false);
-        }
-        TorManager.extractTor("/tor/geoip", confPath+File.separator+"geoip", false);
-        TorManager.extractTor("/tor/geoip6", confPath+File.separator+"geoip6", false);
     }
 //Overloads bc why not
     public static void flip(TorOption val) {
@@ -93,21 +83,26 @@ public class SettingsMgr {
     public static boolean get(String val) {
         return !settings.get(TorOption.valueOf(val.substring(1)));
     }
-
+//Load the mod's cfg
     static HashMap<TorOption, Boolean> loadConfig() {
-        try (BufferedReader reader = new BufferedReader(new FileReader(settConf))) {
-            final String version = reader.readLine(); // Skip the version line
-            if(!version.equals(ver)) {
-                saveConfig(true);
-                AllTorExtract(); //Way to update Tor files, by changing cfg version.
-                logger.info("Updated config.");
+        try (BufferedReader reader = Files.newBufferedReader(settConf)) {
+            if(!reader.readLine().equals(ver)) { // Skip the version line
+                FileUtils.deleteDirectory(confPath.toFile());
+                Files.createDirectory(confPath);
+                reConf();
                 return settings;
             }
-            logger.info("LOADING {}", version);
-            return gson.fromJson(reader, new TypeToken<HashMap<TorOption, Boolean>>() {}.getType());
+            logger.info("LOADING {}", ver);
+            return gson.fromJson(reader, new TypeToken<HashMap<TorOption, Boolean>>(){}.getType());
         } catch (IOException e) {
             logger.error("Failed to load config.");
             throw new RuntimeException(e);
         }
+    }
+
+    static void reConf() {
+        saveConfig(true);
+        Main.AllTorExtract();
+        logger.info("Updated config.");
     }
 }

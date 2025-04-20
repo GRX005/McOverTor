@@ -1,6 +1,24 @@
-package _1ms.McOverTor.manager;
+/*
+    This file is part of the McOverTor project, licensed under the
+    GNU General Public License v3.0
 
-import _1ms.McOverTor.Main;
+    Copyright (C) 2024-2025 _1ms
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program. If not, see <https://www.gnu.org/licenses/>.
+*/
+
+package _1ms.McOverTor.manager;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -14,25 +32,33 @@ import static _1ms.McOverTor.Main.confPath;
 
 public class LocationMgr {
     public record TorRegionInfo(String code, String name) {}
-
+    private static final Path torrc = confPath.resolve("torrc");
+//Read all possible countries from the Tor client's geopip db file, and create a record with it's code and full name.
     public static List<TorRegionInfo> getCtr() {
-        try (Stream<String> stream = Files.lines(Path.of(Main.confPath + "/geoip"))) {
+        try (Stream<String> stream = Files.lines(confPath.resolve("geoip"))) {
             return stream
+                    .filter(c->!c.contains("#") && !c.contains("?") && !c.isEmpty())
                     .map(LocationMgr::checker)
-                    .filter(c->!c.isEmpty())
                     .distinct()
                     .map(c->new TorRegionInfo(c, new Locale.Builder().setRegion(c).build().getDisplayCountry()))
+                    .filter(c->c.name.length() > 2)
                     .sorted(Comparator.comparing(TorRegionInfo::name))
                     .toList();
-
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
+//Filter out just the country codes
+    private static String checker(String val) {
+        while (val.startsWith(",") || val.chars().anyMatch(Character::isDigit))
+            val = val.substring(1);
+        return val;
+    }
 
+//Get the selected countries from the Tor client's torrc config file.
     public static Set<String> getSelCtr() {
         try {
-            String ln = Files.readAllLines(Path.of(Main.confPath + "/torrc")).getLast().substring(10);
+            String ln = Files.readAllLines(torrc).getLast().substring(10);
             Set<String> codes = new HashSet<>();
             Matcher mtr = Pattern.compile("\\{([A-Z]{2})}").matcher(ln);
             while (mtr.find())
@@ -42,29 +68,49 @@ public class LocationMgr {
             throw new RuntimeException(e);
         }
     }
-
-    private static String checker(String val) {
-        if(val.contains("#"))
-            return "";
-        while (val.startsWith(",") || val.startsWith("?") || val.chars().anyMatch(Character::isDigit))
-            val = val.substring(1);
-        return val;
-    }
-
+//Apply the modifed regions as needed to the torrc file.
     public static void modRegions(Set<String> regs) {
-        Path file = Path.of(confPath+"/torrc");
         try {
-            List<String> lines = Files.readAllLines(file);
-            if(regs.isEmpty()) { //IF it's empty.
-                lines.remove(lines.getLast());
+            List<String> lines = Files.readAllLines(torrc);
+            final String lastLn = lines.getLast();
+            if(regs.isEmpty()) { //IF none are selected, delete
+                lines.remove(lastLn);
+                if(lines.getLast().startsWith("MiddleNodes"))
+                    for(int i=0; i<2; i++)
+                        lines.remove(lines.getLast());
             } else {
                 StringBuilder toSave = new StringBuilder();
                 regs.forEach(e-> toSave.append("{").append(e).append("},"));
-                if (lines.getLast().startsWith("ExitNodes")) //IF it was already there we need to delete the previous.
-                    lines.remove(lines.getLast());
+                if (lastLn.startsWith("ExitNodes")) { //IF it was already there we need to delete the previous.
+                    lines.remove(lastLn); //We have a new last here.
+                    if(lines.getLast().startsWith("MiddleNodes"))
+                        for(int i=0; i<2; i++)
+                            lines.remove(lines.getLast());
+                }
+                if(SettingsMgr.get(TorOption.allNodes)) {//Also entry and middle if we want it to apply to all nodes.
+                    lines.add("EntryNodes "+ toSave);
+                    lines.add("MiddleNodes "+ toSave);
+                }
                 lines.add("ExitNodes "+ toSave);
             }
-            Files.write(file, lines);
+            Files.write(torrc, lines);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+//If only the TorOption.allNodes option changed, not the selection of countries
+    public static void remOrAdd(boolean add) {
+        try {
+            List<String> lines = Files.readAllLines(torrc);
+            if(!add) {
+                for(int i=0; i<2; i++)
+                    lines.remove(lines.size()-2);
+            } else {
+                final String toAdd = lines.getLast().substring(10);
+                lines.add(lines.size()-1,"EntryNodes "+toAdd);
+                lines.add(lines.size()-1,"MiddleNodes "+toAdd);
+            }
+            Files.write(torrc, lines);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

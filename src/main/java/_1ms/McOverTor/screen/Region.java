@@ -1,3 +1,23 @@
+/*
+    This file is part of the McOverTor project, licensed under the
+    GNU General Public License v3.0
+
+    Copyright (C) 2024-2025 _1ms
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program. If not, see <https://www.gnu.org/licenses/>.
+*/
+
 package _1ms.McOverTor.screen;
 
 import _1ms.McOverTor.Main;
@@ -17,28 +37,48 @@ import net.minecraft.client.sound.PositionedSoundInstance;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 import static _1ms.McOverTor.manager.LocationMgr.TorRegionInfo;
+import static _1ms.McOverTor.manager.SettingsMgr.get;
 
 public class Region extends Screen {
     private static final List<TorRegionInfo> regions = LocationMgr.getCtr();
     private static final Set<String> usedR = LocationMgr.getSelCtr();
-    //static final SettCheckBox multipleSel = new SettCheckBox(0,0,Text.literal("Select multiple"), TorOption.multipleSel);
-    static final SettCheckBox strictRegion = new SettCheckBox(0,0,Text.literal("Strict nodes enforcement"), TorOption.strictRegion);
+    static final SettCheckBox multiRegion = new SettCheckBox(0,0,Text.literal("Enforce for all nodes"), TorOption.allNodes);
     static final ButtonWidget closeBtn = ButtonWidget.builder(Text.literal("Done"), btn-> closeBtnF()).build();
+    static final ButtonWidget resetBtn = ButtonWidget.builder(Text.literal("Reset"), btn-> usedR.clear()).size(100,20).build();
     private static TorRegionList regList;
-    public Region() {
+    private static Set<String> snapshot;
+    private static boolean blSnap;
+    public Region() {//Take a snapshot of the options, so when the menu is closed we can see what changed.
         super(Text.literal("Tor Region Selector"));
+        snapshot = new HashSet<>(usedR);
+        blSnap = get(TorOption.allNodes);
     }
 
     private static void closeFunc() {
         MinecraftClient.getInstance().setScreen(new MultiplayerScreen(new TitleScreen()));
     }
-
+//Switch between multi or single node application, and/or apply the change of countries
     private static void closeBtnF() {
-        LocationMgr.modRegions(usedR);
+        if(!usedR.equals(snapshot)) {//If the selected countries changed
+            LocationMgr.modRegions(usedR);
+            checkAndRelaunch();
+            return;
+        }
+        //Re-Start Tor if already started so that the settings will apply, otherwise close.
+        if (blSnap != get(TorOption.allNodes) && !usedR.isEmpty()) { //If the state of the tick changed
+            LocationMgr.remOrAdd(get(TorOption.allNodes));
+            checkAndRelaunch();
+            return;
+        }
+         closeFunc();
+    }
+
+    private static void checkAndRelaunch() {
         if(TorManager.progress == 100) {
             TorManager.exitTor(true);
             TorManager.startTor();
@@ -48,29 +88,32 @@ public class Region extends Screen {
     }
 
     @Override
-    protected void init() {//List lenght repsonsive
+    protected void init() {
         super.init();
         closeBtn.setFocused(false);
-        if(regList==null) {//250
+        resetBtn.setFocused(false);
+        if(regList==null) {//250. Create the list UI and add the regions' names.
             regList = new TorRegionList(this.client, 260,300,0,20);
             regions.forEach(regList::addItem);
         }
         regList.setPosition(this.width/2-130, this.height/2-175);
 
-        //multipleSel.setPosition(this.width/2, this.height/2+200);
-        strictRegion.setPosition(this.width/2-75, this.height/2+135);
-        closeBtn.setPosition(this.width / 2 - 75, this.height/2+170);
+        multiRegion.setPosition(this.width/2-75, this.height/2+132);//135
+        closeBtn.setPosition(this.width / 2 - 75, this.height/2+175);
+        resetBtn.setPosition(this.width / 2 - 50, this.height/2+152);
 
-        strictRegion.setTooltip(Tooltip.of(Text.literal("Ensures Tor only connects through the location(s) that you've selected, even if there are no available nodes, or they are very slow.")));
+        multiRegion.setTooltip(Tooltip.of(Text.literal("Make the selection(s) also apply to the Entry and Middle nodes, not just the ExitNode.")));
 
-        //this.addSelectableChild(multipleSel);
-        this.addSelectableChild(strictRegion);
+        this.addSelectableChild(multiRegion);
         this.addSelectableChild(closeBtn);
+        this.addSelectableChild(resetBtn);
         this.addSelectableChild(regList);
     }
 
     @Override
     public void close() {
+        usedR.clear();//Restore when the user exits with ESC instead of the done btn
+        usedR.addAll(snapshot);
         closeFunc();
     }
 
@@ -78,19 +121,22 @@ public class Region extends Screen {
     public void render(DrawContext context, int mouseX, int mouseY, float deltaTicks) {
         super.render(context,mouseX,mouseY,deltaTicks);
 
-        Main.renderWindow(context, (this.width - 200) / 2-50, this.height/2-200, 300, 400, "McOverTor Regions");
+        Main.renderWindow(context, this.width/2-150, this.height/2-200, 300, 400, "McOverTor Regions");
         regList.render(context,mouseX,mouseY,deltaTicks);
-        //multipleSel.render(context,mouseX,mouseY,deltaTicks);
-        strictRegion.render(context,mouseX,mouseY,deltaTicks);
-        closeBtn.render(context,mouseX,mouseY,deltaTicks);
-    }
 
+        multiRegion.render(context,mouseX,mouseY,deltaTicks);
+        closeBtn.render(context,mouseX,mouseY,deltaTicks);
+        resetBtn.render(context,mouseX,mouseY,deltaTicks);
+
+        if(usedR.isEmpty())
+            context.drawCenteredTextWithShadow(MinecraftClient.getInstance().textRenderer, "none selected -> Tor decides",this.width/2 ,this.height/2-190, 0xFFFFFF);
+    }
+//Use the default MC list widget to create our own.
     private static class TorRegionList extends EntryListWidget<TorRegionList.TorRegion> {
         public TorRegionList(MinecraftClient client, int width, int height, int y, int itemsHeight) {
             super(client, width, height, y, itemsHeight);
-
         }
-
+//Correctly position the scrollbar so it aligns to the list's width properly
         @Override
         protected int getScrollbarX() {
             return this.getRowRight()+12;
@@ -101,7 +147,7 @@ public class Region extends Screen {
             this.appendDefaultNarrations(builder);
         }
 
-        // Add entries to your list
+        // Add entries to the list
         public void addItem(TorRegionInfo reg) {
             this.addEntry(new TorRegion(reg.name(), reg.code()));
         }
@@ -121,7 +167,6 @@ public class Region extends Screen {
                 context.drawText(MinecraftClient.getInstance().textRenderer, text, x, y + 4, 0xFFFFFF, true);
                 if (usedR.contains(code))
                     drawTick(context,x-22,y-2);
-
             }
 
             @Override

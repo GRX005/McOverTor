@@ -30,9 +30,7 @@ import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermissions;
-import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 
 import static _1ms.McOverTor.Main.confPath;
 import static _1ms.McOverTor.Main.isLinux;
@@ -43,7 +41,7 @@ public class TorManager {
     private static BufferedReader in;
     private static Process torP;
     private static Thread torStopThread;
-    static final File torFile = new File(confPath, "tor");
+    static final Path tor = confPath.resolve("tor");
 
     public static volatile int progress = 0;
     public static volatile String message = "(starting): Starting";
@@ -58,20 +56,14 @@ public class TorManager {
     }
 
     //Extract the files located in the plugin to the desired path.
-    public static void extractTor(String input, String output, boolean launch) {
-        Thread.ofVirtual().name("FileExtract").start(()-> { //Async so all the unpackings can run concurrently, and it won't slow down the client's starting.
-            try (BufferedInputStream in = new BufferedInputStream(Objects.requireNonNull(TorManager.class.getResourceAsStream(input))); BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(output))) {
-                final byte[] buffer = new byte[4096];
-                int read;
-                while ((read = in.read(buffer)) != -1) {
-                    out.write(buffer, 0, read);
-                }
+    public static void extractTor(String input, String output) {
+        Thread.ofVirtual().name("TorFileExtract").start(()-> { //Async so all the unpackings can run concurrently, and it won't slow down the client's starting.
+            try (BufferedInputStream in = new BufferedInputStream(Objects.requireNonNull(TorManager.class.getResourceAsStream(input))); BufferedOutputStream out = new BufferedOutputStream(Files.newOutputStream(confPath.resolve(output)))) {
+                in.transferTo(out);
             } catch (IOException e) {
                 logger.error("Couldn't extract tor");
                 throw new RuntimeException(e);
             }
-            if(launch)
-                launchTor();
         });
     }
 
@@ -79,15 +71,15 @@ public class TorManager {
     private static void launchTor() {
         if(isLinux){
             try {
-                Files.setPosixFilePermissions(torFile.toPath(), PosixFilePermissions.fromString("rwxr-xr-x")); //Perm so ./tor can be ran
+                Files.setPosixFilePermissions(tor, PosixFilePermissions.fromString("rwxr-xr-x")); //Perm so ./tor can be ran
             } catch (IOException e) {
                 logger.error("Failed to set Tor PosixFilePermissions.");
                 throw new RuntimeException(e);
             }
         }
-        final ProcessBuilder pb = new ProcessBuilder(torFile.getAbsolutePath(), "-f", confPath+File.separator+"torrc", "--DataDirectory", confPath);
+        final ProcessBuilder pb = new ProcessBuilder(tor.toAbsolutePath().toString(), "-f", confPath+File.separator+"torrc", "--DataDirectory", confPath.toString());
         if(isLinux)
-            pb.environment().put("LD_LIBRARY_PATH", ":"+torFile.getParent());
+            pb.environment().put("LD_LIBRARY_PATH", ":"+ tor.getParent());
         try {
             torP = pb.start();
             Thread.ofVirtual().name("TorOutputReader").start(TorManager::readTorOutput);
@@ -103,10 +95,13 @@ public class TorManager {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(torP.getInputStream()))) {
             String line;
             while ((line = reader.readLine()) != null) {
-                System.out.println(line);
                 if(line.contains("Address already in use")) { //Kill if already running.
                     killTor(true);
                     break;
+                }
+                if(line.contains("Failed")) {
+                    message = "§4"+line.substring(29);
+                    logger.info("Error: {}", message);
                 }
                 if (line.contains("Bootstrapped")) { //Progress msg parsing.
                     progress = Integer.parseInt(line.substring(line.indexOf("Bootstrapped") + 12, line.indexOf("%")).trim());
@@ -116,7 +111,7 @@ public class TorManager {
                     if (message.contains("(starting)")) //First bootstrapped msg, init control as soon as possible.
                         authControl();
                     if(progress == 100) { //Shut down reader after Tor is Loaded.
-                        //logsAdjust();
+                        logsAdjust();
                         connScrn.connCallback();
                         break;
                     }
