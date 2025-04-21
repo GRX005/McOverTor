@@ -31,6 +31,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.Objects;
+import java.util.Random;
 
 import static _1ms.McOverTor.Main.confPath;
 import static _1ms.McOverTor.Main.isLinux;
@@ -45,6 +46,8 @@ public class TorManager {
 
     public static volatile int progress = 0;
     public static volatile String message = "(starting): Starting";
+    public static String sPort = "9050";
+    private static String cPort = "9051";
     private static final Logger logger = LogManager.getLogger("McOverTor/TorControl");
     public static TorConnect connScrn;
 
@@ -77,7 +80,7 @@ public class TorManager {
                 throw new RuntimeException(e);
             }
         }
-        final ProcessBuilder pb = new ProcessBuilder(tor.toAbsolutePath().toString(), "-f", confPath+File.separator+"torrc", "--DataDirectory", confPath.toString());
+        final ProcessBuilder pb = new ProcessBuilder(tor.toAbsolutePath().toString(), "-f", confPath+File.separator+"torrc", "--DataDirectory", confPath.toString(), "--SocksPort", sPort, "--ControlPort", cPort, "--HashedControlPassword", "16:5CC34EC2B16C1DA260CE40B1D139DA73AAFAFF5EA46E17D2E20191BA76");
         if(isLinux)
             pb.environment().put("LD_LIBRARY_PATH", ":"+ tor.getParent());
         try {
@@ -96,7 +99,7 @@ public class TorManager {
             String line;
             while ((line = reader.readLine()) != null) {
                 if(line.contains("Address already in use")) { //Kill if already running.
-                    killTor(true);
+                    killTor(true, false);
                     break;
                 }
                 if(line.contains("Failed")) {
@@ -130,14 +133,22 @@ public class TorManager {
     }
 
     //Forcefully shut down the Tor client when needed.
-    public static void killTor(boolean relaunch) {
+    public static void killTor(boolean relaunch, boolean linuxKill) {
         try {
             if(torStopThread != null) {
                 Runtime.getRuntime().removeShutdownHook(torStopThread); //Remove shutdown hook as the Tor client is stopped here.
                 torStopThread = null;
             }
             if (isLinux)
-                new ProcessBuilder("killall", "tor").start().waitFor();
+                if(linuxKill)
+                    new ProcessBuilder("killall", "tor").start().waitFor();
+                else {
+                    final Random rand = new Random();
+                    sPort = String.valueOf(rand.nextInt(61001,65535));
+                    do cPort = String.valueOf(rand.nextInt(61001,65535)); //Gen and check if we somehow gened the same num.
+                    while (Objects.equals(cPort, sPort));
+                    logger.info("Default ports already occupied, switching to Socks: {}, Control: {}", sPort,cPort);
+                }
             else
                 new ProcessBuilder("taskkill", "/F", "/IM", "tor").start().waitFor();
             if(relaunch) //If tor was already running on the system before the mod starting it.
@@ -153,7 +164,7 @@ public class TorManager {
     //Connect to the Tor client control port.
     private static void authControl() {
         try {
-            socket = new Socket("127.0.0.1", 9051);
+            socket = new Socket("127.0.0.1", Integer.parseInt(cPort));
             out = new PrintWriter(socket.getOutputStream(), true);
             out.println("AUTHENTICATE \"TorControlPs01\"");
             in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
@@ -189,7 +200,7 @@ public class TorManager {
             }
         } catch (IOException ignored) {}
         logger.warn("Failed to close Tor.");
-        killTor(false);//Kill tor if it couldn't be closed.
+        killTor(false, true);//Kill tor if it couldn't be closed.
     }
     //Change circuits without restarting, using the control port.
     public static int changeCircuits() {

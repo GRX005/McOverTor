@@ -165,10 +165,12 @@ abstract class MpButtonsAdd extends Screen {
                 return (NativeImageBackedTexture) constructor.newInstance(image);
                 // Use 'texture' as needed
             } catch (Exception ex) {
-                throw new RuntimeException("Failed to create NativeImageBackedTexture with one parameter", ex);
+                logger.error("Failed to invoke older NativeImageBackedTexture constructor.");
+                throw new RuntimeException(ex);
             }
         } catch (Exception e) {
-            throw new RuntimeException("Failed to create NativeImageBackedTexture", e);
+            logger.error("Other error with NativeImageBackedTexture.");
+            throw new RuntimeException(e);
         }
     }
 

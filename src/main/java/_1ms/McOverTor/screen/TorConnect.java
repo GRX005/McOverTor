@@ -45,6 +45,7 @@ public class TorConnect extends Screen {
 
     public TorConnect() {
         super(Text.literal("Connect to Tor"));
+        fail = false;
     }
 
     @Override
@@ -71,7 +72,7 @@ public class TorConnect extends Screen {
 //After 5% we estabilish a control port conn with Tor so we can close it gracefully.
     private static void cancelBtnFunc() {
         if(progress < 5)
-            TorManager.killTor(false);
+            TorManager.killTor(false, true);
         else
             TorManager.exitTor(true);
         realClose();

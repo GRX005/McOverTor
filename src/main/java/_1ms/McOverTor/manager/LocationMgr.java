@@ -20,6 +20,9 @@
 
 package _1ms.McOverTor.manager;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -33,6 +36,7 @@ import static _1ms.McOverTor.Main.confPath;
 public class LocationMgr {
     public record TorRegionInfo(String code, String name) {}
     private static final Path torrc = confPath.resolve("torrc");
+    private static final Logger logger = LogManager.getLogger("McOverTor/Regions");
 //Read all possible countries from the Tor client's geopip db file, and create a record with it's code and full name.
     public static List<TorRegionInfo> getCtr() {
         try (Stream<String> stream = Files.lines(confPath.resolve("geoip"))) {
@@ -45,6 +49,7 @@ public class LocationMgr {
                     .sorted(Comparator.comparing(TorRegionInfo::name))
                     .toList();
         } catch (IOException e) {
+            logger.error("Failed to get countries from tor's db.");
             throw new RuntimeException(e);
         }
     }
@@ -65,6 +70,7 @@ public class LocationMgr {
                 codes.add(mtr.group(1));
             return codes;
         } catch (IOException e) {
+            logger.error("Failed to get selected countries");
             throw new RuntimeException(e);
         }
     }
@@ -95,6 +101,7 @@ public class LocationMgr {
             }
             Files.write(torrc, lines);
         } catch (IOException e) {
+            logger.error("Failed to apply country modifications");
             throw new RuntimeException(e);
         }
     }
@@ -112,6 +119,7 @@ public class LocationMgr {
             }
             Files.write(torrc, lines);
         } catch (IOException e) {
+            logger.error("Failed to change single/multi nodes application.");
             throw new RuntimeException(e);
         }
     }

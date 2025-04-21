@@ -59,6 +59,7 @@ public class SettingsMgr {
             try { //Create McOverTor dir.
                 Files.createDirectory(confPath);
             } catch (IOException e) {
+                logger.error("Failed to initialize the config");
                 throw new RuntimeException(e);
             }
             reConf();

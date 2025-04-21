@@ -51,7 +51,7 @@ public class Main implements ModInitializer {
         SettingsMgr.initAndCheckConf();
         final Path torrc = confPath.resolve("torrc");
         if(!Files.exists(torrc))
-            Thread.ofVirtual().name("ConfigWriter").start(()->createTorConf(torrc));
+            Thread.ofVirtual().name("TorConfigWriter").start(()->createTorConf(torrc));
         //LocationMgr.getCtr();
         logger.info("McOverTor Loaded!");
     }
@@ -59,8 +59,8 @@ public class Main implements ModInitializer {
     //Create the torrc config file
     static void createTorConf(Path torrc) {
         try {
-            final String sep = File.separator.replace("\\", "\\\\"); //For intercompatibility? windows -> \\ lnx -> /
-            Files.writeString(torrc, "ControlPort 9051\nHashedControlPassword 16:5CC34EC2B16C1DA260CE40B1D139DA73AAFAFF5EA46E17D2E20191BA76\nGeoIPFile \"mcovertor"+sep+"geoip\"\nGeoIPv6File \"mcovertor"+sep+"geoip6\"");
+            final String sep = File.separator.replace("\\", "\\\\"); //For intercompatibility windows -> \\ lnx -> /
+            Files.writeString(torrc, "GeoIPFile \"mcovertor"+sep+"geoip\"\nGeoIPv6File \"mcovertor"+sep+"geoip6\"");
         } catch (IOException e) {
             logger.warn("Error while writing Tor config file!");
             throw new RuntimeException(e);

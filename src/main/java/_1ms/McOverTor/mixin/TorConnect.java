@@ -37,7 +37,7 @@ abstract class TorConnect {
     @Inject(method = "initChannel", at = @At("HEAD"))
     private void connect(Channel channel, CallbackInfo ci) {
         if(TorManager.progress == 100 || SettingsMgr.get(TorOption.torOnly)) {
-            channel.pipeline().addFirst(new Socks5ProxyHandler(new InetSocketAddress("127.0.0.1", 9050)));
+            channel.pipeline().addFirst(new Socks5ProxyHandler(new InetSocketAddress("127.0.0.1", Integer.parseInt(TorManager.sPort))));
 //            channel.pipeline().addLast("exceptionHandler", new ChannelDuplexHandler() {
 //                @Override
 //                public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
