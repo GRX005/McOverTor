@@ -28,12 +28,12 @@ import _1ms.McOverTor.screen.ChangeIP;
 import _1ms.McOverTor.screen.Region;
 import _1ms.McOverTor.screen.Settings;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.TitleScreen;
 import net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen;
 import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.texture.NativeImage;
 import net.minecraft.client.texture.NativeImageBackedTexture;
 import net.minecraft.text.Text;
@@ -44,12 +44,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import java.io.InputStream;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Method;
 import java.util.Objects;
-import java.util.Random;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static _1ms.McOverTor.Main.logger;
@@ -64,17 +59,28 @@ abstract class MpButtonsAdd extends Screen {
     ).dimensions(0, 0, 95, 21).build();
 
     @Unique
-    private static Identifier settIcon;
+    private static final Identifier settIcon = Identifier.of("mcovertor","textures/settings.png");
 
     @Unique
-    private static Identifier regIcon;
+    private static final Identifier regIcon = Identifier.of("mcovertor","textures/globe.png");
+//Init and register sett and reg btn textures the first time this class is called.
+    static {
+        for (int i = 0; i < 2; i++) {
+            String toReq = "assets/mcovertor/textures/" + (i==0 ? "settings.png" : "globe.png");
+            try (var inpStr=Main.class.getClassLoader().getResourceAsStream(toReq); var natImg=NativeImage.read(Objects.requireNonNull(inpStr))) {
+                MinecraftClient.getInstance().getTextureManager().registerTexture(i==0 ? settIcon : regIcon, new NativeImageBackedTexture(()->"TorIcon", natImg));
+            } catch (Exception e) {
+                logger.error("Error while loading icon native image.\n{}", e.toString());
+            }
+        }
+    }
 
     @Unique
     private final ButtonWidget regButton = new ButtonWidget(0,0,26,26,Text.empty(), btn->Objects.requireNonNull(MinecraftClient.getInstance()).setScreen(new Region()), Supplier::get) {
       @Override
       public void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
           super.renderWidget(context, mouseX, mouseY, delta);
-          setIcon(this, context,false);
+          context.drawTexture(RenderPipelines.GUI_TEXTURED, regIcon, this.getX() + 2, this.getY() + 2, 0, 0, 22, 21, 22, 21);
       }
     };
 
@@ -83,7 +89,7 @@ abstract class MpButtonsAdd extends Screen {
         @Override
         public void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
             super.renderWidget(context, mouseX, mouseY, delta);
-            setIcon(this,context,true);
+            context.drawTexture(RenderPipelines.GUI_TEXTURED, settIcon, this.getX() + 2, this.getY() + 2, 0, 0, 22, 21, 22, 21);
         }
     };
 
@@ -129,112 +135,6 @@ abstract class MpButtonsAdd extends Screen {
             return isUpper ? this.width - upRightOff : this.width - lowRightOff;
         else
             return isUpper ? upLeftOff : lowLeftOff;
-    }
-
-    //Reflection to get private contructor, done this way as the .of() func's intermediary changes below 1.21.
-    @Unique
-    private static Identifier reflectIdent(boolean sett) {
-        try {
-            Constructor<?> identConst = Identifier.class.getDeclaredConstructor(String.class, String.class);
-            identConst.setAccessible(true);
-            String toRet = sett ? "textures/settings.png":"textures/globe.png";
-            return (Identifier) identConst.newInstance("mcovertor", toRet);
-        } catch (ReflectiveOperationException e) {
-            logger.error("Identifier getter reflection error.");
-            throw new RuntimeException(e);
-        }
-    }
-
-    @Unique
-    private static NativeImageBackedTexture reflectTexture(InputStream io){
-        NativeImage image;
-        try {//READ img
-            image = NativeImage.read(io);
-        } catch (Exception e) {
-            logger.error("Failed to read settings IMG.");
-            throw new RuntimeException(e);
-        }
-        try {
-            // Try the modern constructor: Supplier<String> and NativeImage
-            Constructor<?> constructor = NativeImageBackedTexture.class.getConstructor(Supplier.class, NativeImage.class);
-            return (NativeImageBackedTexture) constructor.newInstance((Supplier<String>)() -> "TorSettingsIcon"+ new Random().nextInt(), image);
-        } catch (NoSuchMethodException e) {
-            // Older version: only NativeImage parameter
-            try {
-                Constructor<?> constructor = NativeImageBackedTexture.class.getConstructor(NativeImage.class);
-                return (NativeImageBackedTexture) constructor.newInstance(image);
-                // Use 'texture' as needed
-            } catch (Exception ex) {
-                logger.error("Failed to invoke older NativeImageBackedTexture constructor.");
-                throw new RuntimeException(ex);
-            }
-        } catch (Exception e) {
-            logger.error("Other error with NativeImageBackedTexture.");
-            throw new RuntimeException(e);
-        }
-    }
-
-    @Unique
-    public void setIcon(ButtonWidget btn, DrawContext context, boolean sett) {
-        try {
-            if(settIcon == null && sett || regIcon == null && !sett) { //Load at first render try, once.
-                String toReq = sett ? "assets/mcovertor/textures/settings.png" : "assets/mcovertor/textures/globe.png";
-                try (InputStream inputStream = Main.class.getClassLoader().getResourceAsStream(toReq)) {
-                    assert inputStream != null;
-                    if(sett) {
-                        settIcon = reflectIdent(true);
-                        MinecraftClient.getInstance().getTextureManager().registerTexture(settIcon, reflectTexture(inputStream));
-                    }
-                    else {
-                        regIcon = reflectIdent(false);
-                        MinecraftClient.getInstance().getTextureManager().registerTexture(regIcon, reflectTexture(inputStream));
-                    }
-                } catch (Exception e) {
-                    logger.error("Error while loading icon native image.");
-                    throw new RuntimeException(e);
-                }
-            }
-            //context.drawTexture(RenderLayer::getGuiTextured, settIcon, this.getX() + 2, this.getY() + 2, 0, 0, 22, 21, 22, 21);
-            // Use the 1.21.3 method if available (Using runtime intermediary function name of the above)
-            Method drawTextureMethod = DrawContext.class.getMethod(
-                    "method_25290",
-                    Function.class, Identifier.class, int.class, int.class, float.class, float.class, int.class, int.class, int.class, int.class
-            );
-            if(sett)
-                drawTextureMethod.invoke(
-                        context,
-                        (Function<Identifier, RenderLayer>) id -> RenderLayer.getGuiTextured(settIcon),
-                        settIcon, btn.getX() + 2, btn.getY() + 2,
-                        0.0f, 0.0f, 22, 21, 22, 21
-                );
-            else
-                drawTextureMethod.invoke(
-                        context,
-                        (Function<Identifier, RenderLayer>) id -> RenderLayer.getGuiTextured(regIcon),
-                        regIcon, btn.getX() + 2, btn.getY() + 2,
-                        0.0f, 0.0f, 22, 21, 22, 21
-                );
-        } catch (ReflectiveOperationException e) {
-            // Fall back to 1.21.1
-            try {
-                Method drawTextureMethod = DrawContext.class.getMethod(
-                        "method_25290",
-                        Identifier.class, int.class, int.class, float.class, float.class, int.class, int.class, int.class, int.class
-                );
-                if(sett)
-                    drawTextureMethod.invoke(
-                            context,
-                            settIcon, btn.getX() + 2, btn.getY() + 2,
-                            0, 0, 22, 21, 22, 21
-                    );
-                else
-                    drawTextureMethod.invoke(
-                            context,
-                            regIcon, btn.getX() + 2, btn.getY() + 2,
-                            0, 0, 22, 21, 22, 21
-                    );
-            } catch (ReflectiveOperationException ignored) {}
-        }
     }
 
 }

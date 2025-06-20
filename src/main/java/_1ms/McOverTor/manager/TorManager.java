@@ -91,6 +91,7 @@ public class TorManager {
         } catch (IOException e) {
             logger.error("Failed to launch Tor!");
             TorConnect.fail = true;
+            logger.error(e);
         }
     }
 
@@ -123,6 +124,7 @@ public class TorManager {
         } catch (IOException e) {
             logger.error("Error while reading Tor output!");
             TorConnect.fail = true;
+            logger.error(e);
         }
     }
 
@@ -145,8 +147,7 @@ public class TorManager {
                 else {
                     final Random rand = new Random();
                     sPort = String.valueOf(rand.nextInt(61001,65535));
-                    do cPort = String.valueOf(rand.nextInt(61001,65535)); //Gen and check if we somehow gened the same num.
-                    while (Objects.equals(cPort, sPort));
+                    do cPort = String.valueOf(rand.nextInt(61001,65535)); while (Objects.equals(cPort, sPort)); //Gen and check if we somehow gened the same num.
                     logger.info("Default ports already occupied, switching to Socks: {}, Control: {}", sPort,cPort);
                 }
             else

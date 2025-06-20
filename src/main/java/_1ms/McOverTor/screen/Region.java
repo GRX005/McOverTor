@@ -92,7 +92,7 @@ public class Region extends Screen {
         super.init();
         closeBtn.setFocused(false);
         resetBtn.setFocused(false);
-        if(regList==null) {//250. Create the list UI and add the regions' names.
+        if(regList==null) {//Create the list UI and add the regions' names.
             regList = new TorRegionList(this.client, 260,300,0,20);
             regions.forEach(regList::addItem);
         }
@@ -129,7 +129,7 @@ public class Region extends Screen {
         resetBtn.render(context,mouseX,mouseY,deltaTicks);
 
         if(usedR.isEmpty())
-            context.drawCenteredTextWithShadow(MinecraftClient.getInstance().textRenderer, "none selected -> Tor decides",this.width/2 ,this.height/2-190, 0xFFFFFF);
+            context.drawCenteredTextWithShadow(this.textRenderer, "none selected -> Tor decides",this.width/2 ,this.height/2-190, 0xFFFFFFFF);
     }
 //Use the default MC list widget to create our own.
     private static class TorRegionList extends EntryListWidget<TorRegionList.TorRegion> {
@@ -164,7 +164,7 @@ public class Region extends Screen {
 
             @Override
             public void render(DrawContext context, int index, int y, int x, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float tickDelta) {
-                context.drawText(MinecraftClient.getInstance().textRenderer, text, x, y + 4, 0xFFFFFF, true);
+                context.drawTextWithShadow(MinecraftClient.getInstance().textRenderer, text, x, y + 4, 0xFFFFFFFF);
                 if (usedR.contains(code))
                     drawTick(context,x-22,y-2);
             }
@@ -182,24 +182,17 @@ public class Region extends Screen {
             }
 
             void drawTick(DrawContext context, int x, int y) {
-                final int[][] segments = {
-                        {x + 4, y + 9, x + 8, y + 13},  // Left segment
-                        {x + 8, y + 13, x + 16, y + 5}  // Right segment
-                };
-
-                for (int[] seg : segments) {
-                    int dx = seg[2] - seg[0];
-                    int dy = seg[3] - seg[1];
-                    int steps = Math.max(Math.abs(dx), Math.abs(dy));
-
-                    for (int i = 0; i <= steps; i++) {
-                        int xi = seg[0] + i * dx / steps;
-                        int yi = seg[1] + i * dy / steps;
-
-                        for (int t = 0; t < 2; t++) {  //thickness=2
-                            context.drawVerticalLine(xi + t, yi, yi, 0xFF00FF00);
-                        }
-                    }
+                // First segment: from (x+4, y+9) to (x+8, y+13)
+                for (int i = 0; i <= 4; i++) {
+                    int xi = x + 4 + i;
+                    int yi = y + 9 + i;
+                    context.drawHorizontalLine(xi, xi + 1, yi, 0xFF00FF00);
+                }
+                // Second segment: from (x+8, y+13) to (x+16, y+5)
+                for (int i = 0; i <= 8; i++) {
+                    int xi = x + 8 + i;
+                    int yi = y + 13 - i;
+                    context.drawHorizontalLine(xi, xi + 1, yi, 0xFF00FF00);
                 }
             }
         }

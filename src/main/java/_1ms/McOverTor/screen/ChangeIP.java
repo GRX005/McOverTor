@@ -30,8 +30,6 @@ import net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.text.Text;
 
-import java.awt.*;
-
 public class ChangeIP extends Screen {
     private final static ButtonWidget closeButton = ButtonWidget.builder(Text.literal("Okay"), buttonWidget -> realClose())
             .dimensions(0, 0, 120, 20)
@@ -71,11 +69,11 @@ public class ChangeIP extends Screen {
         closeButton.render(context, mouseX, mouseY, delta);
         switch (status) {
             case 0-> { //Will be 0 at first
-                context.drawCenteredTextWithShadow(this.textRenderer, Text.literal("Changing IP..."), centerX, centerY, 0xFFFFFF);
+                context.drawCenteredTextWithShadow(this.textRenderer, "Changing IP...", centerX, centerY, 0xFFFFFFFF);
                 this.status = TorManager.changeCircuits();
             }
-            case 1-> context.drawCenteredTextWithShadow(this.textRenderer, Text.literal("You've successfully changed IP."), centerX, centerY, Color.GREEN.getRGB());
-            case 2-> context.drawCenteredTextWithShadow(this.textRenderer, Text.literal("Failed to change IP!"), centerX, centerY, Color.RED.getRGB());
+            case 1-> context.drawCenteredTextWithShadow(this.textRenderer, "You've successfully changed IP.", centerX, centerY, 0xFF00FF00);
+            case 2-> context.drawCenteredTextWithShadow(this.textRenderer, "Failed to change IP!", centerX, centerY, 0xFFFF0000);
         }
     }
 }

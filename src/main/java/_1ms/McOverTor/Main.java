@@ -27,7 +27,6 @@ import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.network.ServerAddress;
-import net.minecraft.text.Text;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -69,17 +68,17 @@ public class Main implements ModInitializer {
 
     //Render the window around the mod's UI elements in different shapes.
     public static void renderWindow(DrawContext context, int x, int y, int windowWidth, int windowHeight, String text) {
+        final int color = 0xFFFFFFFF;
         //Background
         context.fill(x, y, x + windowWidth, y + windowHeight, 0x80000000);
 
-        final int color = 0xFFFFFFFF;
 
         final int bor1 = x + windowWidth / 2 - 65;
         final int bor2 = x + windowWidth / 2 + 65;
 
         context.fill(x, y, bor1, y + 1, color);               // Top borders
         context.fill(x+windowWidth, y, bor2, y + 1, color);
-        context.drawCenteredTextWithShadow(MinecraftClient.getInstance().textRenderer, Text.literal(text), bor1 + (bor2 - bor1)/2, y-5, 0xFFFFFF); //Top text
+        context.drawCenteredTextWithShadow(MinecraftClient.getInstance().textRenderer, text, bor1 + (bor2 - bor1)/2, y-5, color); //Top text
         context.fill(x, y + windowHeight - 1, x + windowWidth, y + windowHeight, color);  // Bottom border
         context.fill(x, y, x + 1, y + windowHeight, color);              // left border
         context.fill(x + windowWidth - 1, y, x + windowWidth, y + windowHeight, color);   // right border

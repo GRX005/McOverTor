@@ -87,7 +87,7 @@ public class SettCheckBox extends ClickableWidget {
             }
         }
         //Text
-        context.drawText(MinecraftClient.getInstance().textRenderer, this.getMessage(), x + 24, y + 4, borderColor, false);
+        context.drawTextWithShadow(MinecraftClient.getInstance().textRenderer, this.getMessage(), x + 24, y + 4, borderColor);
     }
 
     @Override

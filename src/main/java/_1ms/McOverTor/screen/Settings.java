@@ -31,7 +31,6 @@ import net.minecraft.client.gui.tooltip.Tooltip;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.text.Text;
 
-import java.awt.*;
 import java.util.Objects;
 
 public class Settings extends Screen { //Non-changing parts of the buttons in the settings screen, pre-declared once the UI is opened for the 1st time.
@@ -95,14 +94,14 @@ public class Settings extends Screen { //Non-changing parts of the buttons in th
         preventNonTor.render(context, mouseX, mouseY, delta);
         sepStr.render(context, mouseX, mouseY, delta);
         doneBtn.render(context, mouseX, mouseY, delta);
-        context.drawCenteredTextWithShadow(MinecraftClient.getInstance().textRenderer, Text.literal("Tor Buttons position:"), (this.width - 200) / 2+100, this.height / 2 -100, 0xFFFFFF);
+        context.drawCenteredTextWithShadow(MinecraftClient.getInstance().textRenderer, Text.literal("Tor Buttons position:"), (this.width - 200) / 2+100, this.height / 2 -100, 0xFFFFFFFF);
         left.render(context, mouseX, mouseY, delta);
         right.render(context, mouseX, mouseY, delta);
         upper.render(context, mouseX, mouseY, delta);
         lower.render(context, mouseX, mouseY, delta);
         torDNS.render(context, mouseX, mouseY, delta);
 //Line between the vertical and horizontal pos settings.
-        context.drawVerticalLine(this.width/2, this.height/2-50, this.height/2-90, Color.WHITE.getRGB());
+        context.drawVerticalLine(this.width/2, this.height/2-50, this.height/2-90, 0xFFFFFFFF);
     }
 
 }

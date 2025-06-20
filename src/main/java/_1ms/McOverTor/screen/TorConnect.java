@@ -30,7 +30,6 @@ import net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.text.Text;
 
-import java.awt.*;
 import java.util.Objects;
 
 import static _1ms.McOverTor.manager.TorManager.progress;
@@ -96,10 +95,10 @@ public class TorConnect extends Screen {
         Main.renderWindow(context, x-110, y-80, barWidth+220, barHeight+140, "McOverTor Connection");
 
         renderProgressBar(context, x, y-20, barWidth, barHeight);
-        context.drawCenteredTextWithShadow(this.textRenderer, Text.literal(progress + "%"), xhalf, y-14, 0xFFFFFF); //Progress in %
+        context.drawCenteredTextWithShadow(this.textRenderer, Text.literal(progress + "%"), xhalf, y-14, 0xFFFFFFFF); //Progress in %
 //Render the fail msg and ret if the conn failed.
         if(fail) {
-            context.drawCenteredTextWithShadow(this.textRenderer, Text.literal("Failed to launch Tor, check logs."), xhalf, y + barHeight - 10, Color.RED.getRGB());
+            context.drawCenteredTextWithShadow(this.textRenderer, Text.literal("Failed to launch Tor, check logs."), xhalf, y + barHeight - 10, 0xFFFF0000);
             cancelButton.render(context, mouseX, mouseY, delta);
             return;
         }
@@ -107,11 +106,11 @@ public class TorConnect extends Screen {
         context.drawCenteredTextWithShadow(this.textRenderer, Text.literal(TorManager.message), xhalf, y + barHeight - 10, 0xA0FFFFFF);
 
         if (progress < 100) {
-            context.drawCenteredTextWithShadow(this.textRenderer, Text.literal("Connecting to Tor..."), xhalf, yhalf - 60, 0xFFFFFF);
+            context.drawCenteredTextWithShadow(this.textRenderer, Text.literal("Connecting to Tor..."), xhalf, yhalf - 60, 0xFFFFFFFF);
             cancelButton.render(context, mouseX, mouseY, delta);
             return;
         }
-        context.drawCenteredTextWithShadow(this.textRenderer, Text.literal("Successfully connected to Tor!"), xhalf, yhalf - 60, Color.GREEN.getRGB());
+        context.drawCenteredTextWithShadow(this.textRenderer, Text.literal("Successfully connected to Tor!"), xhalf, yhalf - 60, 0xFF00FF00);
 
         closeButton.render(context, mouseX, mouseY, delta);
     }
