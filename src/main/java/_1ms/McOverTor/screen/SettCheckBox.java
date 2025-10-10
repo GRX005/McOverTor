@@ -23,10 +23,13 @@ package _1ms.McOverTor.screen;
 import _1ms.McOverTor.manager.SettingsMgr;
 import _1ms.McOverTor.manager.TorOption;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
 import net.minecraft.client.gui.widget.ClickableWidget;
 import net.minecraft.text.Text;
+
+import static _1ms.McOverTor.Main.drawBorder;
 
 public class SettCheckBox extends ClickableWidget {
     private final TorOption val;
@@ -43,7 +46,7 @@ public class SettCheckBox extends ClickableWidget {
         this.val = null;
     }
     @Override
-    public void onClick(double mouseX, double mouseY) {
+    public void onClick(Click click, boolean doubled) {
         if(strVal == null)
             SettingsMgr.flip(val);
         else
@@ -60,7 +63,7 @@ public class SettCheckBox extends ClickableWidget {
         context.fill(x, y, x + this.width, y + this.height, 0x80000000);
 
         //Border
-        context.drawBorder(x, y, this.width, this.height, borderColor);
+        drawBorder(context, x, y, this.width, this.height, borderColor);
 
         // Draw the "X" if checked
         boolean stuff;

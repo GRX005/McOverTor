@@ -41,11 +41,11 @@ public class LocationMgr {
     public static List<TorRegionInfo> getCtr() {
         try (Stream<String> stream = Files.lines(confPath.resolve("geoip"))) {
             return stream
-                    .filter(c->!c.contains("#") && !c.contains("?") && !c.isEmpty())
-                    .map(LocationMgr::checker)
+                    .filter(c->!c.startsWith("#") && !c.endsWith("?") && !c.isEmpty())
+                    .map(l->l.substring(l.lastIndexOf(",") + 1))//Filter out ctr codes
                     .distinct()
                     .map(c->new TorRegionInfo(c, new Locale.Builder().setRegion(c).build().getDisplayCountry()))
-                    .filter(c->c.name.length() > 2)
+                    .filter(c->c.name.length() > 2)//remove those codes which java can't find a name for.
                     .sorted(Comparator.comparing(TorRegionInfo::name))
                     .toList();
         } catch (IOException e) {
@@ -53,14 +53,8 @@ public class LocationMgr {
             throw new RuntimeException(e);
         }
     }
-//Filter out just the country codes
-    private static String checker(String val) {
-        while (val.startsWith(",") || val.chars().anyMatch(Character::isDigit))
-            val = val.substring(1);
-        return val;
-    }
 
-//Get the selected countries from the Tor client's torrc config file.
+//Get the selected countries from the Tor client's torrc config file. NOTE: HashSet, bc in its used in a render loop with .contains()
     public static Set<String> getSelCtr() {
         try {
             String ln = Files.readAllLines(torrc).getLast().substring(10);

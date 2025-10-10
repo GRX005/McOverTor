@@ -90,7 +90,7 @@ public class TorManager {
             logger.info("Tor successfully launched.");
         } catch (IOException e) {
             logger.error("Failed to launch Tor!");
-            TorConnect.fail = true;
+            TorConnect.failToStart = true;
             logger.error(e);
         }
     }
@@ -98,7 +98,14 @@ public class TorManager {
     private static void readTorOutput(){
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(torP.getInputStream()))) {
             String line;
+            boolean firstVer = true;
             while ((line = reader.readLine()) != null) {
+                if (firstVer) {//Print Tor's version
+                    var ver = line.split(" ");
+                    logger.info("Starting {} {} {}", ver[4], ver[5], ver[6]);
+                    firstVer=false;
+                    continue;
+                }
                 if(line.contains("Address already in use")) { //Kill if already running.
                     killTor(true, false);
                     break;
@@ -106,14 +113,19 @@ public class TorManager {
                 if(line.contains("Failed")) {
                     message = "§4"+line.substring(29);
                     logger.info("Error: {}", message);
+                    break;
                 }
                 if (line.contains("Bootstrapped")) { //Progress msg parsing.
                     progress = Integer.parseInt(line.substring(line.indexOf("Bootstrapped") + 12, line.indexOf("%")).trim());
                     message = line.substring(line.indexOf("%") + 1).trim();
                     logger.info("Progress: {}%, Status: {}", progress, message);
+                    TorConnect.failToConn=false;//Needed here to rm the warn msg from the ui when the connection advances
                     //Itt meg tudsz hívni egy funkciót ami előrébb viszi a progress bars progress százalékra
-                    if (message.contains("(starting)")) //First bootstrapped msg, init control as soon as possible.
+                    if (message.contains("(starting)")) { //First bootstrapped msg, init control as soon as possible.
                         authControl();
+                        timeOutCheck();//Start timeout check 10s
+                        continue;
+                    }
                     if(progress == 100) { //Shut down reader after Tor is Loaded.
                         logsAdjust();
                         connScrn.connCallback();
@@ -123,7 +135,7 @@ public class TorManager {
             }
         } catch (IOException e) {
             logger.error("Error while reading Tor output!");
-            TorConnect.fail = true;
+            TorConnect.failToStart = true;
             logger.error(e);
         }
     }
@@ -132,6 +144,31 @@ public class TorManager {
     private static void resetProg() {
         progress = 0;
         message = "(starting): Starting";
+    }
+
+    private static void timeOutCheck() {
+        Thread.ofVirtual().name("TorTimeoutChecker").start(() -> {
+            var counter = 0;
+            var prevProg = 0;
+            while (true) {
+                try {
+                    var currProg = progress;
+                    if (currProg==0 || currProg==100) //If cancel or done
+                        break;
+                    if (prevProg==currProg) {
+                        counter++;
+                    } else {
+                        counter=0;
+                        prevProg=currProg;
+                    }
+                    if (counter==10)
+                        TorConnect.failToConn=true;
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    break;
+                }
+            }
+        });
     }
 
     //Forcefully shut down the Tor client when needed.
@@ -158,7 +195,7 @@ public class TorManager {
                 resetProg();
             logger.info("Killed already running Tor.");
         } catch (InterruptedException | IOException ignored) {
-            TorConnect.fail = true;
+            TorConnect.failToStart = true;
         }
     }
 
@@ -180,7 +217,7 @@ public class TorManager {
             }
         } catch (IOException e) {
             logger.error("Tor couldn't be started, control port auth error.");
-            TorConnect.fail = true;
+            TorConnect.failToStart = true;
         }
         torP.destroy();
     }

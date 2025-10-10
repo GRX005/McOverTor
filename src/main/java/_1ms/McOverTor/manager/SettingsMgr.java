@@ -38,7 +38,7 @@ public class SettingsMgr {
     private static final Path settConf = confPath.resolve("config.cfg");
     private static final Gson gson = new Gson();
     private static HashMap<TorOption, Boolean> settings = new HashMap<>();
-    private final static String ver = "CONFIG_VERSION: 1.3";
+    private final static String ver = "CONFIG_VERSION: 1.4";
 
     //Save cfg, and load def settings if needed.
     static void saveConfig(boolean first) {
@@ -84,7 +84,7 @@ public class SettingsMgr {
     public static boolean get(String val) {
         return !settings.get(TorOption.valueOf(val.substring(1)));
     }
-//Load the mod's cfg
+//Load the mod's cfg, to upd the tor client used -> upd the cfg version
     static HashMap<TorOption, Boolean> loadConfig() {
         try (BufferedReader reader = Files.newBufferedReader(settConf)) {
             if(!reader.readLine().equals(ver)) { // Skip the version line

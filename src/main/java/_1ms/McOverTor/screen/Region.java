@@ -25,6 +25,7 @@ import _1ms.McOverTor.manager.LocationMgr;
 import _1ms.McOverTor.manager.TorManager;
 import _1ms.McOverTor.manager.TorOption;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.TitleScreen;
@@ -90,13 +91,16 @@ public class Region extends Screen {
     @Override
     protected void init() {
         super.init();
+
         closeBtn.setFocused(false);
         resetBtn.setFocused(false);
         if(regList==null) {//Create the list UI and add the regions' names.
-            regList = new TorRegionList(this.client, 260,300,0,20);
+            regList = new TorRegionList(this.client,0,0,0,20);
             regions.forEach(regList::addItem);
         }
-        regList.setPosition(this.width/2-130, this.height/2-175);
+        //We need to upd the pos of the list like this to ensure the list's entries are correctly placed after window resizing in 1.21.9&+
+        //x: 130
+        regList.position(255,300, this.width/2-130, this.height/2-175);
 
         multiRegion.setPosition(this.width/2-75, this.height/2+132);//135
         closeBtn.setPosition(this.width / 2 - 75, this.height/2+175);
@@ -108,6 +112,7 @@ public class Region extends Screen {
         this.addSelectableChild(closeBtn);
         this.addSelectableChild(resetBtn);
         this.addSelectableChild(regList);
+
     }
 
     @Override
@@ -149,28 +154,35 @@ public class Region extends Screen {
 
         // Add entries to the list
         public void addItem(TorRegionInfo reg) {
-            this.addEntry(new TorRegion(reg.name(), reg.code()));
+            this.addEntry(new TorRegion(reg.name(), reg.code(), children().size()));
         }
 
         // Entry class for each item in the list
-        private static class TorRegion extends EntryListWidget.Entry<TorRegion> {
+        private class TorRegion extends EntryListWidget.Entry<TorRegion> {
             private final Text text;
             private final String code;
+            private final int ind;
 
-            public TorRegion(String text, String code) {
+            public TorRegion(String text, String code, int ind) {
                 this.text = Text.literal(text);
                 this.code = code;
+                this.ind = ind;
             }
 
             @Override
-            public void render(DrawContext context, int index, int y, int x, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float tickDelta) {
-                context.drawTextWithShadow(MinecraftClient.getInstance().textRenderer, text, x, y + 4, 0xFFFFFFFF);
+            public void render(DrawContext context, int mouseX, int mouseY, boolean hovered, float deltaTicks) {
+                //y+4
+                var regList = TorRegionList.this;
+                var x = regList.getRowLeft();
+                var y = regList.getRowTop(ind);
+                //X and Y has been replaced by the mouse versions, now we get the row coordinates from the parent, rowleft is the same for all, for the top of the row we need to know which row is it?
+                context.drawTextWithShadow(MinecraftClient.getInstance().textRenderer, text, x+2, y+6, 0xFFFFFFFF);
                 if (usedR.contains(code))
-                    drawTick(context,x-22,y-2);
+                    drawTick(context,x-19,y);
             }
 
             @Override
-            public boolean mouseClicked(double mouseX, double mouseY, int button) {
+            public boolean mouseClicked(Click click, boolean doubled) {
                 // Handle click events
                 if(usedR.contains(code))
                     usedR.remove(code);

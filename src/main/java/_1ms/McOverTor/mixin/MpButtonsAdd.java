@@ -52,6 +52,7 @@ import static _1ms.McOverTor.manager.TorManager.progress;
 
 @Mixin(MultiplayerScreen.class)
 abstract class MpButtonsAdd extends Screen {
+
     @Unique
     private final static ButtonWidget newIpButton = ButtonWidget.builder(
             Text.literal("Change IP"),
@@ -74,7 +75,7 @@ abstract class MpButtonsAdd extends Screen {
             }
         }
     }
-
+//Render custom icons
     @Unique
     private final ButtonWidget regButton = new ButtonWidget(0,0,26,26,Text.empty(), btn->Objects.requireNonNull(MinecraftClient.getInstance()).setScreen(new Region()), Supplier::get) {
       @Override
@@ -97,26 +98,37 @@ abstract class MpButtonsAdd extends Screen {
         super(title);
     }
 
-    @Inject(method = "init()V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/multiplayer/MultiplayerScreen;updateButtonActivationStates()V"))
+    @Inject(method = "init()V", at = @At("TAIL"))
     public void multiplayerGuiOpen(CallbackInfo ci) {
+        newIpButton.active = progress >= 100;
+        //without this it'll stay focused after click for some reason
+        newIpButton.setFocused(false);
+//        settButton.setFocused(false);
+//        regButton.setFocused(false);
+        this.addDrawableChild(newIpButton);
+        this.addDrawableChild(settButton);
+        this.addDrawableChild(regButton);
+        //regButton.setAlpha(1);
+       // this.addDrawableChild(torButton);
+        
+    }
+    @Unique
+    private ButtonWidget torButton;
+
+    @Inject(method = "refreshWidgetPositions()V", at = @At("HEAD"))
+    public void refresh(CallbackInfo ci) {
         final boolean isUpper = SettingsMgr.get(TorOption.isUpper);
         final boolean isRight = SettingsMgr.get(TorOption.isRight);
 
-        newIpButton.setPosition(calcX(isUpper, isRight, 205, 105, 110, 10), isUpper ? 5 : this.height-30);
-        settButton.setPosition(calcX(isUpper, isRight, 235, 133, 210, 107), isUpper ? 3 : this.height-59);
-        regButton.setPosition(calcX(isUpper, isRight, 265, 133, 240, 107), isUpper ? 3 : this.height-31);
+        newIpButton.setPosition(calcX(isUpper, isRight, 205, 105, 110, 10), isUpper ? 5 : this.height-27);
+        settButton.setPosition(calcX(isUpper, isRight, 235, 133, 210, 107), isUpper ? 3 : this.height-56);
+        regButton.setPosition(calcX(isUpper, isRight, 265, 133, 240, 107), isUpper ? 3 : this.height-28);
+        if(torButton!=null)
+            this.remove(torButton);
+        //We init this here and re-add every time, otherwise it'll stay focused for some reason after turning it off.
+        torButton = ButtonWidget.builder(Text.literal("Tor: " + (progress == 100 ? "§aON" : "§cOFF")), MpButtonsAdd::TorBtnFunc).dimensions(isRight ? this.width-105 : 10, isUpper ? 5 : this.height - 52, 95, 21).build();
 
-        newIpButton.active = progress >= 100;
-        newIpButton.setFocused(false);
-        settButton.setFocused(false);
-        regButton.setFocused(false);
-
-        this.addDrawableChild(ButtonWidget.builder(
-                Text.literal("Tor: " + (progress == 100 ? "§aON" : "§cOFF")), MpButtonsAdd::TorBtnFunc).dimensions(isRight ? this.width-105 : 10, isUpper ? 5 : this.height - 55, 95, 21).build()); //We init this here otherwise it'll stay focused for some reason after turning it off.
-        this.addDrawableChild(newIpButton);
-        this.addDrawableChild(settButton);
-
-        this.addDrawableChild(regButton);
+        this.addDrawableChild(torButton);
     }
 
     @Unique
