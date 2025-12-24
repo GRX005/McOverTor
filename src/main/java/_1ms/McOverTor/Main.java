@@ -42,17 +42,19 @@ public class Main implements ModInitializer {
     public static final Logger logger = LogManager.getLogger("McOverTor");
     @Override
     public void onInitialize() {
-        if(isLinux)
-            logger.info("Linux detected!");
-        else
-            logger.info("Windows detected!");
+        Thread.ofVirtual().name("TorInit").start(()-> {
+            if(isLinux)
+                logger.info("Linux detected!");
+            else
+                logger.info("Windows detected!");
 
-        SettingsMgr.initAndCheckConf();
-        final Path torrc = confPath.resolve("torrc");
-        if(!Files.exists(torrc))
-            Thread.ofVirtual().name("TorConfigWriter").start(()->createTorConf(torrc));
-        //LocationMgr.getCtr();
-        logger.info("McOverTor Loaded!");
+            SettingsMgr.initAndCheckConf();
+            final Path torrc = confPath.resolve("torrc");
+            if(!Files.exists(torrc))
+                createTorConf(torrc);
+            //LocationMgr.getCtr();
+            logger.info("McOverTor Loaded!");
+        });
     }
 
     //Create the torrc config file

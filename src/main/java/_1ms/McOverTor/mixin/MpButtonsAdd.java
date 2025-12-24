@@ -20,7 +20,6 @@
 
 package _1ms.McOverTor.mixin;
 
-import _1ms.McOverTor.Main;
 import _1ms.McOverTor.manager.SettingsMgr;
 import _1ms.McOverTor.manager.TorManager;
 import _1ms.McOverTor.manager.TorOption;
@@ -28,14 +27,11 @@ import _1ms.McOverTor.screen.ChangeIP;
 import _1ms.McOverTor.screen.Region;
 import _1ms.McOverTor.screen.Settings;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gl.RenderPipelines;
-import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.TitleScreen;
 import net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen;
 import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.texture.NativeImage;
-import net.minecraft.client.texture.NativeImageBackedTexture;
+import net.minecraft.client.gui.widget.TextIconButtonWidget;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import org.spongepowered.asm.mixin.Mixin;
@@ -45,9 +41,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.Objects;
-import java.util.function.Supplier;
 
-import static _1ms.McOverTor.Main.logger;
 import static _1ms.McOverTor.manager.TorManager.progress;
 
 @Mixin(MultiplayerScreen.class)
@@ -60,39 +54,14 @@ abstract class MpButtonsAdd extends Screen {
     ).dimensions(0, 0, 95, 21).build();
 
     @Unique
-    private static final Identifier settIcon = Identifier.of("mcovertor","textures/settings.png");
+    private final TextIconButtonWidget settButton = TextIconButtonWidget.builder(Text.literal("Tor options"),
+                btn->Objects.requireNonNull(MinecraftClient.getInstance()).setScreen(new Settings()),false)
+        .dimension(26,26).texture(Identifier.of("mcovertor", "settings"),22,22).build();
 
     @Unique
-    private static final Identifier regIcon = Identifier.of("mcovertor","textures/globe.png");
-//Init and register sett and reg btn textures the first time this class is called.
-    static {
-        for (int i = 0; i < 2; i++) {
-            String toReq = "assets/mcovertor/textures/" + (i==0 ? "settings.png" : "globe.png");
-            try (var inpStr=Main.class.getClassLoader().getResourceAsStream(toReq); var natImg=NativeImage.read(Objects.requireNonNull(inpStr))) {
-                MinecraftClient.getInstance().getTextureManager().registerTexture(i==0 ? settIcon : regIcon, new NativeImageBackedTexture(()->"TorIcon", natImg));
-            } catch (Exception e) {
-                logger.error("Error while loading icon native image.\n{}", e.toString());
-            }
-        }
-    }
-//Render custom icons
-    @Unique
-    private final ButtonWidget regButton = new ButtonWidget(0,0,26,26,Text.empty(), btn->Objects.requireNonNull(MinecraftClient.getInstance()).setScreen(new Region()), Supplier::get) {
-      @Override
-      public void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
-          super.renderWidget(context, mouseX, mouseY, delta);
-          context.drawTexture(RenderPipelines.GUI_TEXTURED, regIcon, this.getX() + 2, this.getY() + 2, 0, 0, 22, 21, 22, 21);
-      }
-    };
-
-    @Unique
-    private final ButtonWidget settButton = new ButtonWidget(0, 0, 26, 26, Text.empty(), button -> Objects.requireNonNull(MinecraftClient.getInstance()).setScreen(new Settings()), Supplier::get) {
-        @Override
-        public void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
-            super.renderWidget(context, mouseX, mouseY, delta);
-            context.drawTexture(RenderPipelines.GUI_TEXTURED, settIcon, this.getX() + 2, this.getY() + 2, 0, 0, 22, 21, 22, 21);
-        }
-    };
+    private final TextIconButtonWidget regButton = TextIconButtonWidget.builder(Text.literal("Tor regions"),
+                    btn->Objects.requireNonNull(MinecraftClient.getInstance()).setScreen(new Region()),true)
+            .dimension(26,26).texture(Identifier.of("mcovertor", "globe"),22,22).build();
 
     protected MpButtonsAdd(Text title) {
         super(title);
@@ -103,14 +72,9 @@ abstract class MpButtonsAdd extends Screen {
         newIpButton.active = progress >= 100;
         //without this it'll stay focused after click for some reason
         newIpButton.setFocused(false);
-//        settButton.setFocused(false);
-//        regButton.setFocused(false);
         this.addDrawableChild(newIpButton);
         this.addDrawableChild(settButton);
         this.addDrawableChild(regButton);
-        //regButton.setAlpha(1);
-       // this.addDrawableChild(torButton);
-        
     }
     @Unique
     private ButtonWidget torButton;

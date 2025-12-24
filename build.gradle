@@ -1,5 +1,5 @@
 plugins {
-    id 'fabric-loom' version '1.11-SNAPSHOT'
+    id 'fabric-loom' version '1.14-SNAPSHOT'
     id 'maven-publish'
 }
 
@@ -20,11 +20,13 @@ repositories {
 dependencies {
     // To change the versions see the gradle.properties file
 
-    include(modImplementation("io.netty:netty-handler-proxy:4.2.6.Final"))
-    include(modImplementation("io.netty:netty-codec-socks:4.2.6.Final"))
+    include(modImplementation("io.netty:netty-handler-proxy:4.2.9.Final"))
+    include(modImplementation("io.netty:netty-codec-socks:4.2.9.Final"))
     minecraft("com.mojang:minecraft:${cfgMinecraftVersion}")
     mappings("net.fabricmc:yarn:${project.yarn_mappings}:v2")
     modImplementation("net.fabricmc:fabric-loader:${cfgLoaderVersion}")
+    include(modImplementation(fabricApi.module("fabric-resource-loader-v1","${project.fabric_version}")))
+    include(modImplementation(fabricApi.module("fabric-api-base", "${project.fabric_version}")))
 
     // Fabric API. This is technically optional, but you probably want it anyway.
     // modImplementation("net.fabricmc.fabric-api:fabric-api:${project.fabric_version}")

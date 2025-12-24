@@ -76,7 +76,7 @@ public class TorManager {
             try {
                 Files.setPosixFilePermissions(tor, PosixFilePermissions.fromString("rwxr-xr-x")); //Perm so ./tor can be ran
             } catch (IOException e) {
-                logger.error("Failed to set Tor PosixFilePermissions.");
+                logger.error("[McOverTor] Failed to set Tor PosixFilePermissions.");
                 throw new RuntimeException(e);
             }
         }
@@ -87,9 +87,9 @@ public class TorManager {
             torP = pb.start();
             Thread.ofVirtual().name("TorOutputReader").start(TorManager::readTorOutput);
             Runtime.getRuntime().addShutdownHook(torStopThread = Thread.ofVirtual().name("TorStopper").unstarted(() -> exitTor(false))); //The shutdown hook should always be null at this point.
-            logger.info("Tor successfully launched.");
+            logger.info("[McOverTor] Tor has been launched.");
         } catch (IOException e) {
-            logger.error("Failed to launch Tor!");
+            logger.error("[McOverTor] Failed to launch Tor!");
             TorConnect.failToStart = true;
             logger.error(e);
         }
@@ -185,7 +185,7 @@ public class TorManager {
                     final Random rand = new Random();
                     sPort = String.valueOf(rand.nextInt(61001,65535));
                     do cPort = String.valueOf(rand.nextInt(61001,65535)); while (Objects.equals(cPort, sPort)); //Gen and check if we somehow gened the same num.
-                    logger.info("Default ports already occupied, switching to Socks: {}, Control: {}", sPort,cPort);
+                    logger.info("[McOverTor] Default ports already occupied, switching to Socks: {}, Control: {}", sPort,cPort);
                 }
             else
                 new ProcessBuilder("taskkill", "/F", "/IM", "tor").start().waitFor();
@@ -193,7 +193,7 @@ public class TorManager {
                 launchTor();
             else
                 resetProg();
-            logger.info("Killed already running Tor.");
+            logger.info("[McOverTor] Killed already running Tor.");
         } catch (InterruptedException | IOException ignored) {
             TorConnect.failToStart = true;
         }
@@ -233,11 +233,11 @@ public class TorManager {
                     Runtime.getRuntime().removeShutdownHook(torStopThread);
                     torStopThread = null;
                 }
-                logger.info("Tor has been closed.");
+                logger.info("[McOverTor] Tor has been closed.");
                 return;
             }
         } catch (IOException ignored) {}
-        logger.warn("Failed to close Tor.");
+        logger.warn("[McOverTor] Failed to close Tor.");
         killTor(false, true);//Kill tor if it couldn't be closed.
     }
     //Change circuits without restarting, using the control port.
@@ -246,11 +246,11 @@ public class TorManager {
             out.println("SIGNAL NEWNYM");
             final String resp = in.readLine();
             if (resp.contains("250")) {
-                logger.info("Circuits changed.");
+                logger.info("[McOverTor] Circuits changed.");
                 return 1;
             }
         } catch (IOException ignored) {}
-        logger.warn("Failed to change circuits.");
+        logger.warn("[McOverTor] Failed to change circuits.");
         return 2;
     }
     //Only log errors, otherwise the stdout buffer fills up, it shouldn't throw errors :)
