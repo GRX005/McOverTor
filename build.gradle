@@ -1,6 +1,5 @@
 plugins {
-    id 'fabric-loom' version '1.14-SNAPSHOT'
-    id 'maven-publish'
+    id 'fabric-loom' version '1.15-SNAPSHOT'
 }
 
 version = project.mod_version
@@ -25,11 +24,8 @@ dependencies {
     minecraft("com.mojang:minecraft:${cfgMinecraftVersion}")
     mappings("net.fabricmc:yarn:${project.yarn_mappings}:v2")
     modImplementation("net.fabricmc:fabric-loader:${cfgLoaderVersion}")
-    include(modImplementation(fabricApi.module("fabric-resource-loader-v1","${project.fabric_version}")))
-    include(modImplementation(fabricApi.module("fabric-api-base", "${project.fabric_version}")))
-
-    // Fabric API. This is technically optional, but you probably want it anyway.
-    // modImplementation("net.fabricmc.fabric-api:fabric-api:${project.fabric_version}")
+    include(modImplementation(fabricApi.module("fabric-resource-loader-v1","${project.fabric_api_version}")))
+    include(modImplementation(fabricApi.module("fabric-api-base", "${project.fabric_api_version}")))
 }
 
 processResources {
@@ -79,19 +75,5 @@ jar {
     // use the captured project name so we don't call project.* inside the execution-time rename closure
     from("LICENSE") {
         rename { "${it}_${cfgProjectName}" }
-    }
-}
-
-// configure the maven publication
-publishing {
-    publications {
-        create("mavenJava", MavenPublication) {
-            artifactId = project.name
-            from components.java
-        }
-    }
-
-    repositories {
-        // Add repositories to publish to here.
     }
 }

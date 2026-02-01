@@ -109,7 +109,7 @@ public class TorConnect extends Screen {
             return;
         }
         if (failToConn)
-            context.drawCenteredTextWithShadow(this.textRenderer, Text.literal("Tor might be failing to connect because of your country selection or internet."), xhalf, y + barHeight +5, 0xFFFF0000);
+            context.drawCenteredTextWithShadow(this.textRenderer, Text.literal("Tor might be failing to connect because of your internet or country selections."), xhalf, y + barHeight +5, 0xFFFF0000);
 
 //Otherwise the tor status msgs.
         context.drawCenteredTextWithShadow(this.textRenderer, Text.literal(TorManager.message), xhalf, y + barHeight - 10, 0xA0FFFFFF);

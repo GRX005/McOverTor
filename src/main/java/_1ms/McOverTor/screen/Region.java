@@ -188,8 +188,7 @@ public class Region extends Screen {
                     usedR.remove(code);
                 else
                     usedR.add(code);
-
-                MinecraftClient.getInstance().getSoundManager().play(PositionedSoundInstance.master(SoundEvents.UI_BUTTON_CLICK, 1.0F));
+                MinecraftClient.getInstance().getSoundManager().play(PositionedSoundInstance.ui(SoundEvents.UI_BUTTON_CLICK, 1.0F));
                 return true;
             }
 
