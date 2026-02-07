@@ -2,7 +2,7 @@
     This file is part of the McOverTor project, licensed under the
     GNU General Public License v3.0
 
-    Copyright (C) 2024-2026 _1ms
+    Copyright (C) 2024-2026 _1ms (GRX005)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -20,18 +20,21 @@
 
 package _1ms.McOverTor.screen;
 
-import _1ms.McOverTor.Main;
 import _1ms.McOverTor.manager.TorOption;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.screen.ConfirmLinkScreen;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.TitleScreen;
 import net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen;
 import net.minecraft.client.gui.tooltip.Tooltip;
 import net.minecraft.client.gui.widget.ButtonWidget;
+import net.minecraft.client.gui.widget.PressableTextWidget;
 import net.minecraft.text.Text;
 
 import java.util.Objects;
+
+import static _1ms.McOverTor.Main.*;
 
 public class Settings extends Screen { //Non-changing parts of the buttons in the settings screen, pre-declared once the UI is opened for the 1st time.
     private final static SettCheckBox preventNonTor = new SettCheckBox(0, 0, Text.literal("Prevent non-Tor connections"), TorOption.torOnly);
@@ -42,12 +45,13 @@ public class Settings extends Screen { //Non-changing parts of the buttons in th
     private final static SettCheckBox lower = new SettCheckBox(0, 0, Text.literal("Lower"), "!"+TorOption.isUpper);
     private final static SettCheckBox torDNS = new SettCheckBox(0,0, Text.literal("Resolve DNS using Tor"), TorOption.useTorDNS);
     private final static ButtonWidget doneBtn = ButtonWidget.builder(Text.literal("Done"), btn -> CloseR()).dimensions(0, 0, 120, 20).build();
+
 //UI constructor, gets executed only when UI is opened, we set the tooltips here.
     public Settings() {
         super(Text.literal("McOverTor Settings"));
         preventNonTor.setTooltip(Tooltip.of(Text.literal("Makes it so you cannot ping or connect to servers if Tor isn't turned on, to prevent accidents.")));
         sepStr.setTooltip(Tooltip.of(Text.literal("Get a new IP every time you join a server.")));
-        torDNS.setTooltip(Tooltip.of(Text.literal("§aPros: §fDNS queries won't leak your IP, more secure.\nYou can connect to .onion server addresses.\n§cCons: §fTor might fail to resolve some domains, so it is turned off by default.")));
+        torDNS.setTooltip(Tooltip.of(Text.literal("§aPros: §fDNS queries won't leak your IP, it's more secure.\nYou can connect to .onion server addresses.\n§cCons: §fTor might fail to resolve some domains that use SRV, so it is turned off by default.")));
     }
 //Override initialization of the UI, runs when the UI is opened but also every time it's resized, so we set the btn positions here responsively.
      @Override
@@ -75,6 +79,10 @@ public class Settings extends Screen { //Non-changing parts of the buttons in th
          this.addSelectableChild(upper);
          this.addSelectableChild(lower);
          this.addSelectableChild(torDNS);
+
+         var txtW = this.textRenderer.getWidth(madeByText);
+         this.addDrawableChild(new PressableTextWidget(this.width-txtW-2,this.height-10,txtW,10, madeByText,
+                 ConfirmLinkScreen.opening(this, githubUrl), this.textRenderer));
      }
 //Override the close func of the UI so it returns to the multiplayer screen when pressing ESC, not the title screen.
      @Override
@@ -82,7 +90,7 @@ public class Settings extends Screen { //Non-changing parts of the buttons in th
          CloseR();
      }
 //Return to the mp screen correctly by setting it's parent as the TitleScreen, so it goes there after closing it.
-     public static void CloseR() {
+     private static void CloseR() {
         Objects.requireNonNull(MinecraftClient.getInstance()).setScreen(new MultiplayerScreen(new TitleScreen()));
      }
 //Override the render func, so we can render the elements above the window.
@@ -90,7 +98,9 @@ public class Settings extends Screen { //Non-changing parts of the buttons in th
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         super.render(context, mouseX, mouseY, delta);
 
-        Main.renderWindow(context, (this.width - 200) / 2-50, this.height / 2 - 170, 300, 350, "McOverTor Settings");
+        context.drawTextWithShadow(this.textRenderer, verText,2, this.height-10, 0xFFFFFFFF);
+
+        renderWindow(context, (this.width - 200) / 2-50, this.height / 2 - 170, 300, 350, "McOverTor Settings");
         preventNonTor.render(context, mouseX, mouseY, delta);
         sepStr.render(context, mouseX, mouseY, delta);
         doneBtn.render(context, mouseX, mouseY, delta);

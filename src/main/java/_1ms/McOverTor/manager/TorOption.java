@@ -2,7 +2,7 @@
     This file is part of the McOverTor project, licensed under the
     GNU General Public License v3.0
 
-    Copyright (C) 2024-2026 _1ms
+    Copyright (C) 2024-2026 _1ms (GRX005)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -17,6 +17,7 @@
     You should have received a copy of the GNU General Public License
     along with this program. If not, see <https://www.gnu.org/licenses/>.
 */
+
 package _1ms.McOverTor.manager;
 
 public enum TorOption {

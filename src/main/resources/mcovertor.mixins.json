@@ -3,9 +3,10 @@
   "minVersion": "0.8",
   "package": "_1ms.McOverTor.mixin",
   "compatibilityLevel": "JAVA_21",
-  "client": [
+  "mixins": [
     "ChInit",
     "FixPing",
+    "HandshakeFix",
     "MpButtonsAdd",
     "NettyNoDNS",
     "StreamSeparate",
@@ -13,5 +14,8 @@
   ],
   "injectors": {
     "defaultRequire": 1
+  },
+  "overwrites": {
+    "requireAnnotations": true
   }
 }

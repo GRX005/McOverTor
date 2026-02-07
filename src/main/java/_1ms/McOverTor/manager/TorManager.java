@@ -2,7 +2,7 @@
     This file is part of the McOverTor project, licensed under the
     GNU General Public License v3.0
 
-    Copyright (C) 2024-2026 _1ms
+    Copyright (C) 2024-2026 _1ms (GRX005)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -30,6 +30,7 @@ import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermissions;
+import java.time.Duration;
 import java.util.Objects;
 import java.util.Random;
 
@@ -42,14 +43,14 @@ public class TorManager {
     private static BufferedReader in;
     private static Process torP;
     private static Thread torStopThread;
-    static final Path tor = confPath.resolve("tor");
+    private static final Path tor = confPath.resolve("tor");
 
     public static volatile int progress = 0;
     public static volatile String message = "(starting): Starting";
     public static String sPort = "9050";
     private static String cPort = "9051";
     private static final Logger logger = LogManager.getLogger("McOverTor/TorControl");
-    public static TorConnect connScrn;
+    private static TorConnect connScrn;
 
     public static void startTor() {
         TorConnect scrn = new TorConnect();
@@ -163,7 +164,7 @@ public class TorManager {
                     }
                     if (counter==10)
                         TorConnect.failToConn=true;
-                    Thread.sleep(1000);
+                    Thread.sleep(Duration.ofSeconds(1));
                 } catch (InterruptedException e) {
                     break;
                 }

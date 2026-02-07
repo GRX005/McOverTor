@@ -2,7 +2,7 @@
     This file is part of the McOverTor project, licensed under the
     GNU General Public License v3.0
 
-    Copyright (C) 2024-2026 _1ms
+    Copyright (C) 2024-2026 _1ms (GRX005)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -26,20 +26,28 @@ import net.fabricmc.api.ModInitializer;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.network.ServerAddress;
+import net.minecraft.text.Text;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
 public class Main implements ModInitializer {
     public static final Path confPath = FabricLoader.getInstance().getGameDir().resolve("mcovertor");
     public static final boolean isLinux = System.getProperty("os.name").toLowerCase().contains("linux");
-    public static final ThreadLocal<ServerAddress> connIP = new ThreadLocal<>();
     public static final Logger logger = LogManager.getLogger("McOverTor");
+
+    public final static Text madeByText = Text.literal("Made by _1ms.");
+    public final static URI githubUrl = URI.create("https://github.com/GRX005");
+    public final static Text verText = Text.literal("McOverTor " +
+            FabricLoader.getInstance().getModContainer("mcovertor")
+                    .map(mod -> mod.getMetadata().getVersion().getFriendlyString())
+                    .orElse("unknown version"));
+
     @Override
     public void onInitialize() {
         Thread.ofVirtual().name("TorInit").start(()-> {

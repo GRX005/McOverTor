@@ -2,7 +2,7 @@
     This file is part of the McOverTor project, licensed under the
     GNU General Public License v3.0
 
-    Copyright (C) 2024-2026 _1ms
+    Copyright (C) 2024-2026 _1ms (GRX005)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -20,13 +20,13 @@
 
 package _1ms.McOverTor.screen;
 
-import _1ms.McOverTor.Main;
-import _1ms.McOverTor.manager.LocationMgr;
+import _1ms.McOverTor.manager.RegionMgr;
 import _1ms.McOverTor.manager.TorManager;
 import _1ms.McOverTor.manager.TorOption;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.screen.ConfirmLinkScreen;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.TitleScreen;
 import net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen;
@@ -34,6 +34,7 @@ import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
 import net.minecraft.client.gui.tooltip.Tooltip;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.EntryListWidget;
+import net.minecraft.client.gui.widget.PressableTextWidget;
 import net.minecraft.client.sound.PositionedSoundInstance;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
@@ -42,18 +43,20 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static _1ms.McOverTor.manager.LocationMgr.TorRegionInfo;
+import static _1ms.McOverTor.Main.*;
+import static _1ms.McOverTor.manager.RegionMgr.TorRegionInfo;
 import static _1ms.McOverTor.manager.SettingsMgr.get;
 
 public class Region extends Screen {
-    private static final List<TorRegionInfo> regions = LocationMgr.getCtr();
-    private static final Set<String> usedR = LocationMgr.getSelCtr();
+    private static final List<TorRegionInfo> regions = RegionMgr.getCtr();
+    private static final Set<String> usedR = RegionMgr.getSelCtr();
     static final SettCheckBox multiRegion = new SettCheckBox(0,0,Text.literal("Enforce for all nodes"), TorOption.allNodes);
     static final ButtonWidget closeBtn = ButtonWidget.builder(Text.literal("Done"), btn-> closeBtnF()).build();
     static final ButtonWidget resetBtn = ButtonWidget.builder(Text.literal("Reset"), btn-> usedR.clear()).size(100,20).build();
     private static TorRegionList regList;
     private static Set<String> snapshot;
     private static boolean blSnap;
+
     public Region() {//Take a snapshot of the options, so when the menu is closed we can see what changed.
         super(Text.literal("Tor Region Selector"));
         snapshot = new HashSet<>(usedR);
@@ -66,13 +69,13 @@ public class Region extends Screen {
 //Switch between multi or single node application, and/or apply the change of countries
     private static void closeBtnF() {
         if(!usedR.equals(snapshot)) {//If the selected countries changed
-            LocationMgr.modRegions(usedR);
+            RegionMgr.modRegions(usedR);
             checkAndRelaunch();
             return;
         }
         //Re-Start Tor if already started so that the settings will apply, otherwise close.
         if (blSnap != get(TorOption.allNodes) && !usedR.isEmpty()) { //If the state of the tick changed
-            LocationMgr.remOrAdd(get(TorOption.allNodes));
+            RegionMgr.remOrAdd(get(TorOption.allNodes));
             checkAndRelaunch();
             return;
         }
@@ -108,11 +111,14 @@ public class Region extends Screen {
 
         multiRegion.setTooltip(Tooltip.of(Text.literal("Make the selection(s) also apply to the Entry and Middle nodes, not just the ExitNode.")));
 
+        var txtW = this.textRenderer.getWidth(madeByText);
+        this.addDrawableChild(new PressableTextWidget(this.width-txtW-2,this.height-10,txtW,10, madeByText,
+                ConfirmLinkScreen.opening(this, githubUrl), this.textRenderer));
+
         this.addSelectableChild(multiRegion);
         this.addSelectableChild(closeBtn);
         this.addSelectableChild(resetBtn);
         this.addSelectableChild(regList);
-
     }
 
     @Override
@@ -126,7 +132,9 @@ public class Region extends Screen {
     public void render(DrawContext context, int mouseX, int mouseY, float deltaTicks) {
         super.render(context,mouseX,mouseY,deltaTicks);
 
-        Main.renderWindow(context, this.width/2-150, this.height/2-200, 300, 400, "McOverTor Regions");
+        context.drawTextWithShadow(this.textRenderer, verText,2, this.height-10, 0xFFFFFFFF);
+
+        renderWindow(context, this.width/2-150, this.height/2-200, 300, 400, "McOverTor Regions");
         regList.render(context,mouseX,mouseY,deltaTicks);
 
         multiRegion.render(context,mouseX,mouseY,deltaTicks);

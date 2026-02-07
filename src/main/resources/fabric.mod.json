@@ -2,7 +2,6 @@
   "schemaVersion": 1,
   "id": "mcovertor",
   "version": "${version}",
-
   "name": "McOverTor",
   "description": "Connect to servers through Tor.",
   "authors": [

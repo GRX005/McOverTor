@@ -2,7 +2,7 @@
     This file is part of the McOverTor project, licensed under the
     GNU General Public License v3.0
 
-    Copyright (C) 2024-2026 _1ms
+    Copyright (C) 2024-2026 _1ms (GRX005)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -20,7 +20,6 @@
 
 package _1ms.McOverTor.manager;
 
-import _1ms.McOverTor.Main;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import org.apache.commons.io.FileUtils;
@@ -31,8 +30,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 
-import static _1ms.McOverTor.Main.confPath;
-import static _1ms.McOverTor.Main.logger;
+import static _1ms.McOverTor.Main.*;
 
 public class SettingsMgr {
     private static final Path settConf = confPath.resolve("config.cfg");
@@ -41,7 +39,7 @@ public class SettingsMgr {
     private final static String ver = "CONFIG_VERSION: 1.6";//+1 this when Tor is updated
 
     //Save cfg, and load def settings if needed.
-    static void saveConfig(boolean first) {
+    private static void saveConfig(boolean first) {
         if(first) //Def values, all false
             for (TorOption opt : TorOption.values())
                 settings.put(opt, false);
@@ -85,7 +83,7 @@ public class SettingsMgr {
         return !settings.get(TorOption.valueOf(val.substring(1)));
     }
 //Load the mod's cfg, to upd the tor client used -> upd the cfg version
-    static HashMap<TorOption, Boolean> loadConfig() {
+    private static HashMap<TorOption, Boolean> loadConfig() {
         try (BufferedReader reader = Files.newBufferedReader(settConf)) {
             if(!reader.readLine().equals(ver)) { // Skip the version line
                 FileUtils.deleteDirectory(confPath.toFile());
@@ -101,9 +99,9 @@ public class SettingsMgr {
         }
     }
 
-    static void reConf() {
+    private static void reConf() {
         saveConfig(true);
-        Main.AllTorExtract();
+        AllTorExtract();
         logger.info("Updated config.");
     }
 }

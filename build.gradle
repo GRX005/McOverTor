@@ -19,8 +19,8 @@ repositories {
 dependencies {
     // To change the versions see the gradle.properties file
 
-    include(modImplementation("io.netty:netty-handler-proxy:4.2.9.Final"))
-    include(modImplementation("io.netty:netty-codec-socks:4.2.9.Final"))
+    include(modImplementation("io.netty:netty-handler-proxy:4.2.10.Final"))
+    include(modImplementation("io.netty:netty-codec-socks:4.2.10.Final"))
     minecraft("com.mojang:minecraft:${cfgMinecraftVersion}")
     mappings("net.fabricmc:yarn:${project.yarn_mappings}:v2")
     modImplementation("net.fabricmc:fabric-loader:${cfgLoaderVersion}")

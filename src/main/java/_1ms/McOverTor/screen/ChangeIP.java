@@ -2,7 +2,7 @@
     This file is part of the McOverTor project, licensed under the
     GNU General Public License v3.0
 
-    Copyright (C) 2024-2026 _1ms
+    Copyright (C) 2024-2026 _1ms (GRX005)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -20,15 +20,18 @@
 
 package _1ms.McOverTor.screen;
 
-import _1ms.McOverTor.Main;
 import _1ms.McOverTor.manager.TorManager;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.screen.ConfirmLinkScreen;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.TitleScreen;
 import net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen;
 import net.minecraft.client.gui.widget.ButtonWidget;
+import net.minecraft.client.gui.widget.PressableTextWidget;
 import net.minecraft.text.Text;
+
+import static _1ms.McOverTor.Main.*;
 
 public class ChangeIP extends Screen {
     private final static ButtonWidget closeButton = ButtonWidget.builder(Text.literal("Okay"), buttonWidget -> realClose())
@@ -43,6 +46,10 @@ public class ChangeIP extends Screen {
         closeButton.setFocused(false);
         closeButton.setPosition(this.width / 2 - 60, this.height / 2 + 30);
         this.addSelectableChild(closeButton);
+
+        var txtW = this.textRenderer.getWidth(madeByText);
+        this.addDrawableChild(new PressableTextWidget(this.width-txtW-2,this.height-10,txtW,10, madeByText,
+                ConfirmLinkScreen.opening(this, githubUrl), this.textRenderer));
     }
 
     @Override
@@ -62,10 +69,12 @@ public class ChangeIP extends Screen {
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         super.render(context, mouseX, mouseY, delta);
 
+        context.drawTextWithShadow(this.textRenderer,verText,2, this.height-10, 0xFFFFFFFF);
+
         final int centerY = this.height / 2-10;
         final int centerX = this.width / 2;
 
-        Main.renderWindow(context, (this.width - 200) / 2-10, centerY - 30, 220, 100, "McOverTor Connection");
+        renderWindow(context, (this.width - 200) / 2-10, centerY - 30, 220, 100, "McOverTor Connection");
         closeButton.render(context, mouseX, mouseY, delta);
         switch (status) {
             case 0-> { //Will be 0 at first

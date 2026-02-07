@@ -2,7 +2,7 @@
     This file is part of the McOverTor project, licensed under the
     GNU General Public License v3.0
 
-    Copyright (C) 2024-2026 _1ms
+    Copyright (C) 2024-2026 _1ms (GRX005)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -20,19 +20,20 @@
 
 package _1ms.McOverTor.screen;
 
-import _1ms.McOverTor.Main;
 import _1ms.McOverTor.manager.TorManager;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.screen.ConfirmLinkScreen;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.TitleScreen;
 import net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen;
 import net.minecraft.client.gui.widget.ButtonWidget;
+import net.minecraft.client.gui.widget.PressableTextWidget;
 import net.minecraft.text.Text;
 
 import java.util.Objects;
 
-import static _1ms.McOverTor.Main.drawBorder;
+import static _1ms.McOverTor.Main.*;
 import static _1ms.McOverTor.manager.TorManager.progress;
 
 public class TorConnect extends Screen {
@@ -63,6 +64,10 @@ public class TorConnect extends Screen {
             this.addSelectableChild(cancelButton);
         else
             this.addSelectableChild(closeButton);
+
+        var txtW = this.textRenderer.getWidth(madeByText);
+        this.addDrawableChild(new PressableTextWidget(this.width-txtW-2,this.height-10,txtW,10, madeByText,
+                ConfirmLinkScreen.opening(this, githubUrl), this.textRenderer));
     }
 //Shouldn't be closed like this, while it's loading.
     @Override
@@ -89,6 +94,8 @@ public class TorConnect extends Screen {
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         super.render(context, mouseX, mouseY, delta);
 
+        context.drawTextWithShadow(this.textRenderer, verText,2, this.height-10, 0xFFFFFFFF);
+
         final int barWidth = 200;
         final int barHeight = 20;
         final int x = (this.width - barWidth) / 2;
@@ -97,9 +104,9 @@ public class TorConnect extends Screen {
         final int xhalf = this.width / 2;
         final int y = yhalf - 10;
         //context.drawGuiTexture(IMAGE_ID, x, y-270, 179, 108);
-        Main.renderWindow(context, x-110, y-80, barWidth+220, barHeight+140, "McOverTor Connection");
+        renderWindow(context, x-110, y-80, barWidth+220, barHeight+140, "McOverTor Connection");
 
-        renderProgressBar(context, x, y-20, barWidth, barHeight);
+        renderProgressBar(context, x, y-20);
         context.drawCenteredTextWithShadow(this.textRenderer, Text.literal(progress + "%"), xhalf, y-14, 0xFFFFFFFF); //Progress in %
 //Render the fail msg and ret if the conn failed.
         if(failToStart) {
@@ -129,10 +136,10 @@ public class TorConnect extends Screen {
         this.addSelectableChild(closeButton);
     }
 
-    public void renderProgressBar(DrawContext context, int x, int y, int barWidth, int barHeight) {
-        drawBorder(context, x - 2, y - 2, barWidth + 4, barHeight + 4, 0xFFFFFFFF);
-        context.fill(x, y, x + (progress * 2), y + barHeight, 0xFF00FF00);
-        context.fill(x + (progress * 2), y, x + barWidth, y + barHeight, 0x80000000);
+    private void renderProgressBar(DrawContext context, int x, int y) {
+        drawBorder(context, x - 2, y - 2, 200 + 4, 20 + 4, 0xFFFFFFFF);
+        context.fill(x, y, x + (progress * 2), y + 20, 0xFF00FF00);
+        context.fill(x + (progress * 2), y, x + 200, y + 20, 0x80000000);
     }
 
 }
