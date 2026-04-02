@@ -32,7 +32,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.net.InetSocketAddress;
 
-@Mixin(targets = "net.minecraft.network.ClientConnection$1")
+@Mixin(targets = "net.minecraft.network.Connection$1")
 abstract class TorConnect {
     @Inject(method = "initChannel", at = @At("HEAD"))
     private void connect(Channel channel, CallbackInfo ci) {

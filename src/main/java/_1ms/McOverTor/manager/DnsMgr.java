@@ -23,7 +23,7 @@ package _1ms.McOverTor.manager;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.RemovalNotification;
-import net.minecraft.client.network.ServerAddress;
+import net.minecraft.client.multiplayer.resolver.ServerAddress;
 
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;

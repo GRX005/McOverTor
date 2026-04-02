@@ -21,7 +21,7 @@
 package _1ms.McOverTor.manager;
 
 import _1ms.McOverTor.screen.TorConnect;
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.Minecraft;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -54,7 +54,7 @@ public class TorManager {
 
     public static void startTor() {
         TorConnect scrn = new TorConnect();
-        Objects.requireNonNull(MinecraftClient.getInstance()).setScreen(scrn);
+        Objects.requireNonNull(Minecraft.getInstance()).setScreen(scrn);
         connScrn = scrn;
         launchTor();
     }

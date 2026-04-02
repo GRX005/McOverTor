@@ -22,31 +22,31 @@ package _1ms.McOverTor.screen;
 
 import _1ms.McOverTor.manager.SettingsMgr;
 import _1ms.McOverTor.manager.TorOption;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.Click;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
-import net.minecraft.client.gui.widget.ClickableWidget;
-import net.minecraft.text.Text;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.narration.NarrationElementOutput;
+import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.network.chat.Component;
 
 import static _1ms.McOverTor.Main.drawBorder;
 
-public class SettCheckBox extends ClickableWidget {
+public class SettCheckBox extends AbstractWidget {
     private final TorOption val;
     private final String strVal;
 
-    public SettCheckBox(int x, int y, Text text, TorOption val) {
+    public SettCheckBox(int x, int y, Component text, TorOption val) {
         super(x, y, 16, 15, text);
         this.val = val;
         this.strVal = null;
     }
-    public SettCheckBox(int x, int y, Text text, String val) {
+    public SettCheckBox(int x, int y, Component text, String val) {
         super(x, y, 16, 15, text);
         this.strVal = val;
         this.val = null;
     }
     @Override
-    public void onClick(Click click, boolean doubled) {
+    public void onClick(MouseButtonEvent click, boolean doubled) {
         if(strVal == null)
             SettingsMgr.flip(val);
         else
@@ -54,7 +54,7 @@ public class SettCheckBox extends ClickableWidget {
     }
 
     @Override
-    public void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
+    public void renderWidget(GuiGraphics context, int mouseX, int mouseY, float delta) {
         final int borderColor = 0xFFFFFFFF;
 
         final int x = this.getX();
@@ -80,22 +80,22 @@ public class SettCheckBox extends ClickableWidget {
             for (int i = 0; i < size; i++) {
                 // Top-left to bottom-right diagonal with thickness
                 for (int t = 0; t < thickness; t++) {
-                    context.drawVerticalLine(x1 + i + t, y1 + i, y1 + i, borderColor);
+                    context.vLine(x1 + i + t, y1 + i, y1 + i, borderColor);
                 }
 
                 // Bottom-left to top-right diagonal with thickness
                 for (int t = 0; t < thickness; t++) {
-                    context.drawVerticalLine(x1 + i + t, y1 + size - i - 1, y1 + size - i - 1, borderColor);
+                    context.vLine(x1 + i + t, y1 + size - i - 1, y1 + size - i - 1, borderColor);
                 }
             }
         }
         //Text
-        context.drawTextWithShadow(MinecraftClient.getInstance().textRenderer, this.getMessage(), x + 24, y + 4, borderColor);
+        context.drawString(Minecraft.getInstance().font, this.getMessage(), x + 24, y + 4, borderColor);
     }
 
     @Override
-    protected void appendClickableNarrations(NarrationMessageBuilder builder) {
-        this.appendDefaultNarrations(builder);
+    protected void updateWidgetNarration(NarrationElementOutput builder) {
+        this.defaultButtonNarrationText(builder);
     }
 
 }

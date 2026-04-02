@@ -26,14 +26,14 @@ import _1ms.McOverTor.manager.TorOption;
 import _1ms.McOverTor.screen.ChangeIP;
 import _1ms.McOverTor.screen.Region;
 import _1ms.McOverTor.screen.Settings;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.TitleScreen;
-import net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen;
-import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.gui.widget.TextIconButtonWidget;
-import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.SpriteIconButton;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -44,26 +44,26 @@ import java.util.Objects;
 
 import static _1ms.McOverTor.manager.TorManager.progress;
 
-@Mixin(MultiplayerScreen.class)
+@Mixin(JoinMultiplayerScreen.class)
 abstract class MpButtonsAdd extends Screen {
 
     @Unique
-    private final static ButtonWidget newIpButton = ButtonWidget.builder(
-            Text.literal("Change IP"),
-            buttonWidget -> Objects.requireNonNull(MinecraftClient.getInstance()).setScreen(new ChangeIP())
-    ).dimensions(0, 0, 95, 21).build();
+    private final static Button newIpButton = Button.builder(
+            Component.literal("Change IP"),
+            buttonWidget -> Objects.requireNonNull(Minecraft.getInstance()).setScreen(new ChangeIP())
+    ).bounds(0, 0, 95, 21).build();
 
     @Unique
-    private final TextIconButtonWidget settButton = TextIconButtonWidget.builder(Text.literal("Tor options"),
-                btn->Objects.requireNonNull(MinecraftClient.getInstance()).setScreen(new Settings()),false)
-        .dimension(26,26).texture(Identifier.of("mcovertor", "settings"),22,22).build();
+    private final SpriteIconButton settButton = SpriteIconButton.builder(Component.literal("Tor options"),
+                btn->Objects.requireNonNull(Minecraft.getInstance()).setScreen(new Settings()),false)
+        .size(26,26).sprite(Identifier.fromNamespaceAndPath("mcovertor", "settings"),22,22).build();
 
     @Unique
-    private final TextIconButtonWidget regButton = TextIconButtonWidget.builder(Text.literal("Tor regions"),
-                    btn->Objects.requireNonNull(MinecraftClient.getInstance()).setScreen(new Region()),true)
-            .dimension(26,26).texture(Identifier.of("mcovertor", "globe"),22,22).build();
+    private final SpriteIconButton regButton = SpriteIconButton.builder(Component.literal("Tor regions"),
+                    btn->Objects.requireNonNull(Minecraft.getInstance()).setScreen(new Region()),true)
+            .size(26,26).sprite(Identifier.fromNamespaceAndPath("mcovertor", "globe"),22,22).build();
 
-    protected MpButtonsAdd(Text title) {
+    protected MpButtonsAdd(Component title) {
         super(title);
     }
 
@@ -72,14 +72,14 @@ abstract class MpButtonsAdd extends Screen {
         newIpButton.active = progress >= 100;
         //without this it'll stay focused after click for some reason
         newIpButton.setFocused(false);
-        this.addDrawableChild(newIpButton);
-        this.addDrawableChild(settButton);
-        this.addDrawableChild(regButton);
+        this.addRenderableWidget(newIpButton);
+        this.addRenderableWidget(settButton);
+        this.addRenderableWidget(regButton);
     }
     @Unique
-    private ButtonWidget torButton;
-
-    @Inject(method = "refreshWidgetPositions()V", at = @At("HEAD"))
+    private Button torButton;
+//TODO REMOVE UNIQUE INTO SEPARATE CLASS?
+    @Inject(method = "repositionElements()V", at = @At("HEAD"))
     public void refresh(CallbackInfo ci) {
         final boolean isUpper = SettingsMgr.get(TorOption.isUpper);
         final boolean isRight = SettingsMgr.get(TorOption.isRight);
@@ -88,20 +88,20 @@ abstract class MpButtonsAdd extends Screen {
         settButton.setPosition(calcX(isUpper, isRight, 235, 133, 210, 107), isUpper ? 3 : this.height-56);
         regButton.setPosition(calcX(isUpper, isRight, 265, 133, 240, 107), isUpper ? 3 : this.height-28);
         if(torButton!=null)
-            this.remove(torButton);
+            this.removeWidget(torButton);
         //We init this here and re-add every time, otherwise it'll stay focused for some reason after turning it off.
-        torButton = ButtonWidget.builder(Text.literal("Tor: " + (progress == 100 ? "§aON" : "§cOFF")), MpButtonsAdd::TorBtnFunc).dimensions(isRight ? this.width-105 : 10, isUpper ? 5 : this.height - 52, 95, 21).build();
+        torButton = Button.builder(Component.literal("Tor: " + (progress == 100 ? "§aON" : "§cOFF")), MpButtonsAdd::TorBtnFunc).bounds(isRight ? this.width-105 : 10, isUpper ? 5 : this.height - 52, 95, 21).build();
 
-        this.addDrawableChild(torButton);
+        this.addRenderableWidget(torButton);
     }
 
     @Unique
-    private static void TorBtnFunc(ButtonWidget ignored) {
+    private static void TorBtnFunc(Button ignored) {
         if (progress < 100) {
             TorManager.startTor();
         } else {
             TorManager.exitTor(true);
-            Objects.requireNonNull(MinecraftClient.getInstance()).setScreen(new MultiplayerScreen(new TitleScreen()));
+            Objects.requireNonNull(Minecraft.getInstance()).setScreen(new JoinMultiplayerScreen(new TitleScreen()));
         }
     }
 

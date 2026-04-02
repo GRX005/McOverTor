@@ -21,15 +21,15 @@
 package _1ms.McOverTor.screen;
 
 import _1ms.McOverTor.manager.TorManager;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.ConfirmLinkScreen;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.TitleScreen;
-import net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen;
-import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.gui.widget.PressableTextWidget;
-import net.minecraft.text.Text;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.ConfirmLinkScreen;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.PlainTextButton;
+import net.minecraft.network.chat.Component;
 
 import java.util.Objects;
 
@@ -40,13 +40,13 @@ public class TorConnect extends Screen {
     //private static final Identifier IMAGE_ID = Identifier.of("mcovertor", "tor");
     public static volatile boolean failToStart = false;
     public static volatile boolean failToConn = false;
-    private final static ButtonWidget closeButton = ButtonWidget.builder(Text.literal("Okay"), Btn -> realClose())
-            .dimensions(0, 0, 120, 20).build();
-    private final static ButtonWidget cancelButton = ButtonWidget.builder(Text.literal("Cancel"), Btn -> cancelBtnFunc())
-            .dimensions(0, 0, 120, 20).build();
+    private final static Button closeButton = Button.builder(Component.literal("Okay"), Btn -> realClose())
+            .bounds(0, 0, 120, 20).build();
+    private final static Button cancelButton = Button.builder(Component.literal("Cancel"), Btn -> cancelBtnFunc())
+            .bounds(0, 0, 120, 20).build();
 
     public TorConnect() {
-        super(Text.literal("Connect to Tor"));
+        super(Component.literal("Connect to Tor"));
         failToStart = false;
         failToConn = false;
     }
@@ -61,13 +61,13 @@ public class TorConnect extends Screen {
         cancelButton.setPosition(this.width / 2 - 60, this.height / 2 + 30);
         closeButton.setPosition(this.width / 2 - 60, this.height / 2 + 30);
         if (progress!=100)
-            this.addSelectableChild(cancelButton);
+            this.addWidget(cancelButton);
         else
-            this.addSelectableChild(closeButton);
+            this.addWidget(closeButton);
 
-        var txtW = this.textRenderer.getWidth(madeByText);
-        this.addDrawableChild(new PressableTextWidget(this.width-txtW-2,this.height-10,txtW,10, madeByText,
-                ConfirmLinkScreen.opening(this, githubUrl), this.textRenderer));
+        var txtW = this.font.width(madeByText);
+        this.addRenderableWidget(new PlainTextButton(this.width-txtW-2,this.height-10,txtW,10, madeByText,
+                ConfirmLinkScreen.confirmLink(this, githubUrl), this.font));
     }
 //Shouldn't be closed like this, while it's loading.
     @Override
@@ -76,7 +76,7 @@ public class TorConnect extends Screen {
     }
 
     @Override
-    public void close() {
+    public void onClose() {
         realClose();
     }
 //After 5% we estabilish a control port conn with Tor so we can close it gracefully.
@@ -88,13 +88,13 @@ public class TorConnect extends Screen {
         realClose();
     }
 
-    private static void realClose() { Objects.requireNonNull(MinecraftClient.getInstance()).setScreen(new MultiplayerScreen(new TitleScreen())); }
+    private static void realClose() { Objects.requireNonNull(Minecraft.getInstance()).setScreen(new JoinMultiplayerScreen(new TitleScreen())); }
 
     @Override
-    public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+    public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
         super.render(context, mouseX, mouseY, delta);
 
-        context.drawTextWithShadow(this.textRenderer, verText,2, this.height-10, 0xFFFFFFFF);
+        context.drawString(this.font, verText,2, this.height-10, 0xFFFFFFFF);
 
         final int barWidth = 200;
         final int barHeight = 20;
@@ -107,36 +107,36 @@ public class TorConnect extends Screen {
         renderWindow(context, x-110, y-80, barWidth+220, barHeight+140, "McOverTor Connection");
 
         renderProgressBar(context, x, y-20);
-        context.drawCenteredTextWithShadow(this.textRenderer, Text.literal(progress + "%"), xhalf, y-14, 0xFFFFFFFF); //Progress in %
+        context.drawCenteredString(this.font, Component.literal(progress + "%"), xhalf, y-14, 0xFFFFFFFF); //Progress in %
 //Render the fail msg and ret if the conn failed.
         if(failToStart) {
-            context.drawCenteredTextWithShadow(this.textRenderer, Text.literal("Failed to launch Tor, check logs."), xhalf, y + barHeight - 10, 0xFFFF0000);
-            context.drawCenteredTextWithShadow(this.textRenderer, Text.literal("Error occurred!"), xhalf, yhalf - 60, 0xFFFF5555);
+            context.drawCenteredString(this.font, Component.literal("Failed to launch Tor, check logs."), xhalf, y + barHeight - 10, 0xFFFF0000);
+            context.drawCenteredString(this.font, Component.literal("Error occurred!"), xhalf, yhalf - 60, 0xFFFF5555);
             cancelButton.render(context, mouseX, mouseY, delta);
             return;
         }
         if (failToConn)
-            context.drawCenteredTextWithShadow(this.textRenderer, Text.literal("Tor might be failing to connect because of your internet or country selections."), xhalf, y + barHeight +5, 0xFFFF0000);
+            context.drawCenteredString(this.font, Component.literal("Tor might be failing to connect because of your internet or country selections."), xhalf, y + barHeight +5, 0xFFFF0000);
 
 //Otherwise the tor status msgs.
-        context.drawCenteredTextWithShadow(this.textRenderer, Text.literal(TorManager.message), xhalf, y + barHeight - 10, 0xA0FFFFFF);
+        context.drawCenteredString(this.font, Component.literal(TorManager.message), xhalf, y + barHeight - 10, 0xA0FFFFFF);
 
         if (progress < 100) {
-            context.drawCenteredTextWithShadow(this.textRenderer, Text.literal("Connecting to Tor..."), xhalf, yhalf - 60, 0xFFFFFFFF);
+            context.drawCenteredString(this.font, Component.literal("Connecting to Tor..."), xhalf, yhalf - 60, 0xFFFFFFFF);
             cancelButton.render(context, mouseX, mouseY, delta);
             return;
         }
-        context.drawCenteredTextWithShadow(this.textRenderer, Text.literal("Successfully connected to Tor!"), xhalf, yhalf - 60, 0xFF00FF00);
+        context.drawCenteredString(this.font, Component.literal("Successfully connected to Tor!"), xhalf, yhalf - 60, 0xFF00FF00);
 
         closeButton.render(context, mouseX, mouseY, delta);
     }
 //When the conn reaches 100%, remove the cancelBtn and add close.
     public void connCallback() {
-        this.remove(cancelButton);
-        this.addSelectableChild(closeButton);
+        this.removeWidget(cancelButton);
+        this.addWidget(closeButton);
     }
 
-    private void renderProgressBar(DrawContext context, int x, int y) {
+    private void renderProgressBar(GuiGraphics context, int x, int y) {
         drawBorder(context, x - 2, y - 2, 200 + 4, 20 + 4, 0xFFFFFFFF);
         context.fill(x, y, x + (progress * 2), y + 20, 0xFF00FF00);
         context.fill(x + (progress * 2), y, x + 200, y + 20, 0x80000000);
