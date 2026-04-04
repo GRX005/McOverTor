@@ -22,14 +22,14 @@ package _1ms.McOverTor.screen;
 
 import _1ms.McOverTor.manager.TorOption;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.PlainTextButton;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.ConfirmLinkScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen;
-import net.minecraft.client.gui.components.Tooltip;
-import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.components.PlainTextButton;
 import net.minecraft.network.chat.Component;
 
 import java.util.Objects;
@@ -37,48 +37,31 @@ import java.util.Objects;
 import static _1ms.McOverTor.Main.*;
 
 public class Settings extends Screen { //Non-changing parts of the buttons in the settings screen, pre-declared once the UI is opened for the 1st time.
-    private final static SettCheckBox preventNonTor = new SettCheckBox(0, 0, Component.literal("Prevent non-Tor connections"), TorOption.torOnly);
-    private final static SettCheckBox sepStr = new SettCheckBox(0, 0, Component.literal("Stream separation"), TorOption.sepStreams);
-    private final static SettCheckBox left = new SettCheckBox(0, 0, Component.literal("Left"), "!"+TorOption.isRight);
-    private final static SettCheckBox right = new SettCheckBox(0, 0, Component.literal("Right"), TorOption.isRight);
-    private final static SettCheckBox upper = new SettCheckBox(0, 0, Component.literal("Upper"), TorOption.isUpper);
-    private final static SettCheckBox lower = new SettCheckBox(0, 0, Component.literal("Lower"), "!"+TorOption.isUpper);
-    private final static SettCheckBox torDNS = new SettCheckBox(0,0, Component.literal("Resolve DNS using Tor"), TorOption.useTorDNS);
-    private final static Button doneBtn = Button.builder(Component.literal("Done"), btn -> CloseR()).bounds(0, 0, 120, 20).build();
 
 //UI constructor, gets executed only when UI is opened, we set the tooltips here.
     public Settings() {
         super(Component.literal("McOverTor Settings"));
-        preventNonTor.setTooltip(Tooltip.create(Component.literal("Makes it so you cannot ping or connect to servers if Tor isn't turned on, to prevent accidents.")));
-        sepStr.setTooltip(Tooltip.create(Component.literal("Get a new IP every time you join a server.")));
-        torDNS.setTooltip(Tooltip.create(Component.literal("§aPros: §fDNS queries won't leak your IP, it's more secure.\nYou can connect to .onion server addresses.\n§cCons: §fTor might fail to resolve some domains that use SRV, so it is turned off by default.")));
     }
 //Override initialization of the UI, runs when the UI is opened but also every time it's resized, so we set the btn positions here responsively.
      @Override
      protected void init() {
          super.init();
-         doneBtn.setFocused(false);//Set the btn unfocused upon opening to avoid the mc bug of it staying focused after previously being clicked.
 
          final int x = (this.width - 200) / 2;
          final int y = this.height / 2 - 50;
 
-         preventNonTor.setPosition(x-30, y-100);
-         sepStr.setPosition(x-30, y-75);
-         doneBtn.setPosition(x+40, y+200);
-         left.setPosition(x-30, y-30);
-         right.setPosition(x+35, y-30);
-         upper.setPosition(x+115, y-30);
-         lower.setPosition(x+182, y-30);
-         torDNS.setPosition(x-30, y+10);
 //Registed them as selectable but not drawable.
-         this.addWidget(preventNonTor);
-         this.addWidget(sepStr);
-         this.addWidget(doneBtn);
-         this.addWidget(left);
-         this.addWidget(right);
-         this.addWidget(upper);
-         this.addWidget(lower);
-         this.addWidget(torDNS);
+         this.addRenderableWidget(new SettCheckBox(x-30, y-100, Component.literal("Prevent non-Tor connections"), TorOption.torOnly)
+                 .tooltip("Makes it so you cannot ping or connect to servers if Tor isn't turned on, to prevent accidents."));
+         this.addRenderableWidget(new SettCheckBox(x-30, y-75, Component.literal("Stream separation"), TorOption.sepStreams)
+                 .tooltip("Get a new IP every time you join a server."));
+         this.addRenderableWidget(Button.builder(Component.literal("Done"), _ -> CloseR()).bounds(x+40, y+200, 120, 20).build());
+         this.addRenderableWidget(new SettCheckBox(x-30, y-30, Component.literal("Left"), "!"+TorOption.isRight));
+         this.addRenderableWidget(new SettCheckBox(x+35, y-30, Component.literal("Right"), TorOption.isRight));
+         this.addRenderableWidget(new SettCheckBox(x+115, y-30, Component.literal("Upper"), TorOption.isUpper));
+         this.addRenderableWidget(new SettCheckBox(x+182, y-30, Component.literal("Lower"), "!"+TorOption.isUpper));
+         this.addRenderableWidget(new SettCheckBox(x-30, y+10, Component.literal("Resolve DNS using Tor"), TorOption.useTorDNS)
+                 .tooltip("§aPros: §fDNS queries won't leak your IP, it's more secure.\nYou can connect to .onion server addresses.\n§cCons: §fTor might fail to resolve some domains that use SRV, so it is turned off by default."));
 
          var txtW = this.font.width(madeByText);
          this.addRenderableWidget(new PlainTextButton(this.width-txtW-2,this.height-10,txtW,10, madeByText,
@@ -95,23 +78,16 @@ public class Settings extends Screen { //Non-changing parts of the buttons in th
      }
 //Override the render func, so we can render the elements above the window.
     @Override
-    public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
-        super.render(context, mouseX, mouseY, delta);
+    public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta)  {
+        renderWindow(graphics, (this.width - 200) / 2-50, this.height / 2 - 170, 300, 350, "McOverTor Settings");
+        super.extractRenderState(graphics,mouseX,mouseY,delta);
 
-        context.drawString(this.font, verText,2, this.height-10, 0xFFFFFFFF);
+        graphics.text(this.font, verText,2, this.height-10, 0xFFFFFFFF);
 
-        renderWindow(context, (this.width - 200) / 2-50, this.height / 2 - 170, 300, 350, "McOverTor Settings");
-        preventNonTor.render(context, mouseX, mouseY, delta);
-        sepStr.render(context, mouseX, mouseY, delta);
-        doneBtn.render(context, mouseX, mouseY, delta);
-        context.drawCenteredString(Minecraft.getInstance().font, Component.literal("Tor Buttons position:"), (this.width - 200) / 2+100, this.height / 2 -100, 0xFFFFFFFF);
-        left.render(context, mouseX, mouseY, delta);
-        right.render(context, mouseX, mouseY, delta);
-        upper.render(context, mouseX, mouseY, delta);
-        lower.render(context, mouseX, mouseY, delta);
-        torDNS.render(context, mouseX, mouseY, delta);
+        graphics.centeredText(Minecraft.getInstance().font, Component.literal("Tor Buttons position:"), (this.width - 200) / 2+100, this.height / 2 -100, 0xFFFFFFFF);
+
 //Line between the vertical and horizontal pos settings.
-        context.vLine(this.width/2, this.height/2-50, this.height/2-90, 0xFFFFFFFF);
+        graphics.verticalLine(this.width/2, this.height/2-50, this.height/2-90, 0xFFFFFFFF);
     }
 
 }

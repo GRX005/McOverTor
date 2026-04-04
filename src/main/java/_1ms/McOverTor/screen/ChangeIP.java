@@ -22,21 +22,18 @@ package _1ms.McOverTor.screen;
 
 import _1ms.McOverTor.manager.TorManager;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.PlainTextButton;
 import net.minecraft.client.gui.screens.ConfirmLinkScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen;
-import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.components.PlainTextButton;
 import net.minecraft.network.chat.Component;
 
 import static _1ms.McOverTor.Main.*;
 
 public class ChangeIP extends Screen {
-    private final static Button closeButton = Button.builder(Component.literal("Okay"), _ -> realClose())
-            .bounds(0, 0, 120, 20)
-            .build();
     private int status = 0;
 
     public ChangeIP() {
@@ -47,9 +44,9 @@ public class ChangeIP extends Screen {
     protected void init() {
         super.init();
 
-        closeButton.setFocused(false);
-        closeButton.setPosition(this.width / 2 - 60, this.height / 2 + 30);
-        this.addWidget(closeButton);
+        this.addRenderableWidget(Button.builder(Component.literal("Okay"), _ -> onClose())
+                .bounds(this.width / 2 - 60, this.height / 2 + 30, 120, 20)
+                .build());
 
         var txtW = this.font.width(madeByText);
         this.addRenderableWidget(new PlainTextButton(this.width-txtW-2,this.height-10,txtW,10, madeByText,
@@ -58,32 +55,26 @@ public class ChangeIP extends Screen {
 
     @Override
     public void onClose() {
-        realClose();
+        this.minecraft.setScreen(new JoinMultiplayerScreen(new TitleScreen()));
     }
-
-    private static void realClose() {
-        Minecraft.getInstance().setScreen(new JoinMultiplayerScreen(new TitleScreen()));
-    }
-
 
     @Override
-    public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
-        super.render(context, mouseX, mouseY, delta);
-
-        context.drawString(this.font,verText,2, this.height-10, 0xFFFFFFFF);
-
+    public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
         final int centerY = this.height / 2-10;
         final int centerX = this.width / 2;
+        renderWindow(graphics, (this.width - 200) / 2-10, centerY - 30, 220, 100, "McOverTor Connection");
 
-        renderWindow(context, (this.width - 200) / 2-10, centerY - 30, 220, 100, "McOverTor Connection");
-        closeButton.render(context, mouseX, mouseY, delta);
+        super.extractRenderState(graphics,mouseX,mouseY,a);
+
+        graphics.text(this.font,verText,2, this.height-10, 0xFFFFFFFF);
+
         switch (status) {
             case 0-> { //Will be 0 at first
-                context.drawCenteredString(this.font, "Changing IP...", centerX, centerY, 0xFFFFFFFF);
-                this.status = TorManager.changeCircuits();
+                graphics.centeredText(this.font, "Changing IP...", centerX, centerY, 0xFFFFFFFF);
+                this.status = TorManager.changeCircuits();//TODO ASYNC
             }
-            case 1-> context.drawCenteredString(this.font, "You've successfully changed IP.", centerX, centerY, 0xFF00FF00);
-            case 2-> context.drawCenteredString(this.font, "Failed to change IP!", centerX, centerY, 0xFFFF0000);
+            case 1-> graphics.centeredText(this.font, "You've successfully changed IP.", centerX, centerY, 0xFF00FF00);
+            case 2-> graphics.centeredText(this.font, "Failed to change IP!", centerX, centerY, 0xFFFF0000);
         }
     }
 }

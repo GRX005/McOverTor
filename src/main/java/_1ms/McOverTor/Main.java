@@ -25,7 +25,7 @@ import _1ms.McOverTor.manager.TorManager;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -77,21 +77,20 @@ public class Main implements ModInitializer {
     }
 
     //Render the window around the mod's UI elements in different shapes.
-    public static void renderWindow(GuiGraphics context, int x, int y, int windowWidth, int windowHeight, String text) {
+    public static void renderWindow(GuiGraphicsExtractor graphics, int x, int y, int windowWidth, int windowHeight, String text) {
         final int color = 0xFFFFFFFF;
         //Background
-        context.fill(x, y, x + windowWidth, y + windowHeight, 0x80000000);
-
+        graphics.fill(x, y, x + windowWidth, y + windowHeight, 0x80000000);
 
         final int bor1 = x + windowWidth / 2 - 65;
         final int bor2 = x + windowWidth / 2 + 65;
 
-        context.fill(x, y, bor1, y + 1, color);               // Top borders
-        context.fill(x+windowWidth, y, bor2, y + 1, color);
-        context.drawCenteredString(Minecraft.getInstance().font, text, bor1 + (bor2 - bor1)/2, y-5, color); //Top text
-        context.fill(x, y + windowHeight - 1, x + windowWidth, y + windowHeight, color);  // Bottom border
-        context.fill(x, y, x + 1, y + windowHeight, color);              // left border
-        context.fill(x + windowWidth - 1, y, x + windowWidth, y + windowHeight, color);   // right border
+        graphics.fill(x, y, bor1, y + 1, color);               // Top borders
+        graphics.fill(x+windowWidth, y, bor2, y + 1, color);
+        graphics.centeredText(Minecraft.getInstance().font, text, bor1 + (bor2 - bor1)/2, y-5, color); //Top text
+        graphics.fill(x, y + windowHeight - 1, x + windowWidth, y + windowHeight, color);  // Bottom border
+        graphics.fill(x, y, x + 1, y + windowHeight, color);              // left border
+        graphics.fill(x + windowWidth - 1, y, x + windowWidth, y + windowHeight, color);   // right border
     }
 
     //Extract all Tor files.
@@ -107,11 +106,11 @@ public class Main implements ModInitializer {
         TorManager.extractTor("/tor/geoip6", "geoip6");
     }
 
-    public static void drawBorder(GuiGraphics context, int x, int y, int width, int height, int color) {
-        context.fill(x, y, x + width, y + 1, color);
-        context.fill(x, y + height - 1, x + width, y + height, color);
-        context.fill(x, y + 1, x + 1, y + height - 1, color);
-        context.fill(x + width - 1, y + 1, x + width, y + height - 1, color);
+    public static void drawBorder(GuiGraphicsExtractor graphics, int x, int y, int width, int height, int color) {
+        graphics.fill(x, y, x + width, y + 1, color);
+        graphics.fill(x, y + height - 1, x + width, y + height, color);
+        graphics.fill(x, y + 1, x + 1, y + height - 1, color);
+        graphics.fill(x + width - 1, y + 1, x + width, y + height - 1, color);
     }
 
 }
