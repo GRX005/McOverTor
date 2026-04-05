@@ -13,18 +13,6 @@ repositories {
     // Add repositories to retrieve artifacts from in here.
 }
 
-//dependencies {
-//    // To change the versions see the gradle.properties file
-//    mappings loom.officialMojangMappings()
-//    include(modImplementation("io.netty:netty-handler-proxy:4.2.10.Final"))
-//    include(modImplementation("io.netty:netty-codec-socks:4.2.10.Final"))
-//    minecraft("com.mojang:minecraft:${cfgMinecraftVersion}")
-//
-//    modImplementation("net.fabricmc:fabric-loader:${cfgLoaderVersion}")
-//    include(modImplementation(fabricApi.module("fabric-resource-loader-v1","${project.fabric_api_version}")))
-//    include(modImplementation(fabricApi.module("fabric-api-base", "${project.fabric_api_version}")))
-//}
-
 dependencies {
     val fabVer = providers.gradleProperty("fabric_api_version").get()
     // To change the versions see the gradle.properties file
@@ -37,14 +25,15 @@ dependencies {
 
     include(implementation(fabricApi.module("fabric-resource-loader-v1", fabVer))!!)
     include(implementation(fabricApi.module("fabric-api-base", fabVer))!!)
-
 }
 
 tasks.processResources {
-    inputs.property("version", version)
+    val modVersion = project.version.toString()
+
+    inputs.property("version", modVersion)
 
     filesMatching("fabric.mod.json") {
-        expand("version" to version)
+        expand("version" to modVersion)
     }
 }
 
@@ -64,9 +53,12 @@ java {
 
 // set the archive base name using modern Jar property API (avoids deprecated base/archive properties)
 tasks.jar {
-    inputs.property("archivesName", base.archivesName)
+    // 2. Declare the provider LOCALLY inside the task block
+    val archiveNameProvider = base.archivesName
+
+    inputs.property("archivesName", archiveNameProvider)
 
     from("LICENSE") {
-        rename { "${it}_${base.archivesName.get()}" }
+        rename { "${it}_${archiveNameProvider.get()}" }
     }
 }

@@ -21,7 +21,6 @@
 package _1ms.McOverTor.screen;
 
 import _1ms.McOverTor.manager.TorManager;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.PlainTextButton;
@@ -30,8 +29,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen;
 import net.minecraft.network.chat.Component;
-
-import java.util.Objects;
+import org.jspecify.annotations.NonNull;
 
 import static _1ms.McOverTor.Main.*;
 import static _1ms.McOverTor.manager.TorManager.*;
@@ -52,7 +50,7 @@ public class TorConnect extends Screen {
     protected void init() {
         super.init();
         cancelBtn=Button.builder(Component.literal("Cancel"),_ -> cancelBtnFunc()).bounds(this.width/2-60,this.height/2+30,120,20).build();
-        closeBtn=Button.builder(Component.literal("Okay"),_ -> realClose()).bounds(this.width/2-60,this.height/2+30,120,20).build();
+        closeBtn=Button.builder(Component.literal("Okay"),_ -> onClose()).bounds(this.width/2-60,this.height/2+30,120,20).build();
         if (progress!=100)
             this.addRenderableWidget(cancelBtn);
         else
@@ -70,21 +68,19 @@ public class TorConnect extends Screen {
 
     @Override
     public void onClose() {
-        realClose();
+        this.minecraft.setScreen(new JoinMultiplayerScreen(new TitleScreen()));
     }
 //After 5% we estabilish a control port conn with Tor so we can close it gracefully.
-    private static void cancelBtnFunc() {
+    private void cancelBtnFunc() {
         if(progress < 5)
             TorManager.killTor(false, true);
         else
             TorManager.exitTor(true);
-        realClose();
+        onClose();
     }
 
-    private static void realClose() { Objects.requireNonNull(Minecraft.getInstance()).setScreen(new JoinMultiplayerScreen(new TitleScreen())); }
-
     @Override
-    public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
+    public void extractRenderState(@NonNull GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
 
         final int barWidth = 200;
         final int barHeight = 20;

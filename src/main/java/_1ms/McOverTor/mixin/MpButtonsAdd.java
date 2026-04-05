@@ -48,37 +48,38 @@ import static _1ms.McOverTor.manager.TorManager.progress;
 abstract class MpButtonsAdd extends Screen {
 
     @Unique
-    private final static Button newIpButton = Button.builder(
-            Component.literal("Change IP"),
-            buttonWidget -> Objects.requireNonNull(Minecraft.getInstance()).setScreen(new ChangeIP())
-    ).bounds(0, 0, 95, 21).build();
-
+    private Button newIpButton;
     @Unique
-    private final SpriteIconButton settButton = SpriteIconButton.builder(Component.literal("Tor options"),
-                btn->Objects.requireNonNull(Minecraft.getInstance()).setScreen(new Settings()),false)
-        .size(26,26).sprite(Identifier.fromNamespaceAndPath("mcovertor", "settings"),22,22).build();
-
+    private SpriteIconButton settButton;
     @Unique
-    private final SpriteIconButton regButton = SpriteIconButton.builder(Component.literal("Tor regions"),
-                    btn->Objects.requireNonNull(Minecraft.getInstance()).setScreen(new Region()),true)
-            .size(26,26).sprite(Identifier.fromNamespaceAndPath("mcovertor", "globe"),22,22).build();
+    private SpriteIconButton regButton;
+    @Unique
+    private Button torButton;
 
     protected MpButtonsAdd(Component title) {
         super(title);
     }
-
-    @Inject(method = "init()V", at = @At("TAIL"))
-    public void multiplayerGuiOpen(CallbackInfo ci) {
+//TODO The vanilla btns are over these ones.
+    @Inject(method = "init()V", at = @At("HEAD"))
+    public void init(CallbackInfo ci) {
+        newIpButton = Button.builder(Component.literal("Change IP"),_ -> this.minecraft.setScreen(new ChangeIP()))
+                .size(95,21).build();
         newIpButton.active = progress >= 100;
-        //without this it'll stay focused after click for some reason
-        newIpButton.setFocused(false);
+
+        settButton = SpriteIconButton.builder(Component.literal("Tor options"),_ -> this.minecraft.setScreen(new Settings()),false)
+                .size(26,26).sprite(Identifier.fromNamespaceAndPath("mcovertor","settings"),22,22).build();
+
+        regButton = SpriteIconButton.builder(Component.literal("Tor regions"),_ -> Objects.requireNonNull(Minecraft.getInstance()).setScreen(new Region()),true)
+                .size(26,26).sprite(Identifier.fromNamespaceAndPath("mcovertor", "globe"),22,22).build();
+
+        torButton = Button.builder(Component.literal("Tor: "+(progress==100?"§aON":"§cOFF")),_ -> TorBtnFunc()).size(95,21).build();
+
         this.addRenderableWidget(newIpButton);
         this.addRenderableWidget(settButton);
         this.addRenderableWidget(regButton);
+        this.addRenderableWidget(torButton);
     }
-    @Unique
-    private Button torButton;
-//TODO REMOVE UNIQUE INTO SEPARATE CLASS?
+
     @Inject(method = "repositionElements()V", at = @At("HEAD"))
     public void refresh(CallbackInfo ci) {
         final boolean isUpper = SettingsMgr.get(TorOption.isUpper);
@@ -87,16 +88,11 @@ abstract class MpButtonsAdd extends Screen {
         newIpButton.setPosition(calcX(isUpper, isRight, 205, 105, 110, 10), isUpper ? 5 : this.height-27);
         settButton.setPosition(calcX(isUpper, isRight, 235, 133, 210, 107), isUpper ? 3 : this.height-56);
         regButton.setPosition(calcX(isUpper, isRight, 265, 133, 240, 107), isUpper ? 3 : this.height-28);
-        if(torButton!=null)
-            this.removeWidget(torButton);
-        //We init this here and re-add every time, otherwise it'll stay focused for some reason after turning it off.
-        torButton = Button.builder(Component.literal("Tor: " + (progress == 100 ? "§aON" : "§cOFF")), MpButtonsAdd::TorBtnFunc).bounds(isRight ? this.width-105 : 10, isUpper ? 5 : this.height - 52, 95, 21).build();
-
-        this.addRenderableWidget(torButton);
+        torButton.setPosition(isRight ? this.width-105 : 10, isUpper ? 5 : this.height - 52);
     }
 
     @Unique
-    private static void TorBtnFunc(Button ignored) {
+    private void TorBtnFunc() {
         if (progress < 100) {
             TorManager.startTor();
         } else {

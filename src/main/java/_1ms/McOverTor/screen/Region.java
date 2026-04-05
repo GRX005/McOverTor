@@ -38,6 +38,8 @@ import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.NullMarked;
 
 import java.util.HashSet;
 import java.util.List;
@@ -63,7 +65,7 @@ public class Region extends Screen {
     }
 
     private void closeFunc() {
-        Minecraft.getInstance().setScreen(new JoinMultiplayerScreen(new TitleScreen()));
+        this.minecraft.setScreen(new JoinMultiplayerScreen(new TitleScreen()));
     }
 //Switch between multi or single node application, and/or apply the change of countries
     private void closeBtnF() {
@@ -116,13 +118,13 @@ public class Region extends Screen {
 
     @Override
     public void onClose() {
-        usedR.clear();//Restore when the user exits with ESC instead of the done btn
+        usedR.clear();//Restore when the user exits with ESC instead of the done btn which saves it
         usedR.addAll(snapshot);
         closeFunc();
     }
 
     @Override
-    public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
+    public void extractRenderState(@NonNull GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
         renderWindow(graphics, this.width/2-150, this.height/2-200, 300, 400, "McOverTor Regions");
         super.extractRenderState(graphics, mouseX,  mouseY, a);
 
@@ -131,7 +133,8 @@ public class Region extends Screen {
         if(usedR.isEmpty())
             graphics.centeredText(this.font, "none selected -> Tor decides",this.width/2 ,this.height/2-190, 0xFFFFFFFF);
     }
-//Use the default MC list widget to create our own.
+    //Use the default MC list widget to create our own.
+    @NullMarked
     private class TorRegionList extends AbstractSelectionList<TorRegionList.TorRegion> {
         public TorRegionList(Minecraft client, int width, int height, int y, int itemsHeight) {
             super(client, width, height, y, itemsHeight);
@@ -170,7 +173,7 @@ public class Region extends Screen {
                 var x = regList.getRowLeft();
                 var y = regList.getRowTop(ind);
                 //X and Y has been replaced by the mouse versions, now we get the row coordinates from the parent, rowleft is the same for all, for the top of the row we need to know which row is it?
-                graphics.text(Minecraft.getInstance().font, text, x+2, y+6, 0xFFFFFFFF);
+                graphics.text(regList.minecraft.font, text, x+2, y+6, 0xFFFFFFFF);
                 if (usedR.contains(code))
                     drawTick(graphics,x-19,y);
             }
@@ -182,11 +185,19 @@ public class Region extends Screen {
                     usedR.remove(code);
                 else
                     usedR.add(code);
-                Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
+                regList.minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
                 return true;
             }
 
             void drawTick(GuiGraphicsExtractor graphics, int x, int y) {
+                // Get the current GUI scale
+                double guiScale = Minecraft.getInstance().getWindow().getGuiScale();
+                // Calculate how many logical units equal exactly 1 physical screen pixel
+                float screenPixelOffset = (float) (1.0 / guiScale);
+                // Push the JOML matrix state
+                graphics.pose().pushMatrix();
+                // Translate by the exact fraction needed to move it 1 screen pixel to the left
+                graphics.pose().translate(-screenPixelOffset, 0);
                 // First segment: from (x+4, y+9) to (x+8, y+13)
                 for (int i = 0; i <= 4; i++) {
                     int xi = x + 4 + i;
@@ -199,6 +210,8 @@ public class Region extends Screen {
                     int yi = y + 13 - i;
                     graphics.horizontalLine(xi, xi + 1, yi, 0xFF00FF00);
                 }
+                // Pop the JOML matrix state to restore previous rendering positions
+                graphics.pose().popMatrix();
             }
         }
     }

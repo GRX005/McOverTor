@@ -21,21 +21,19 @@
 package _1ms.McOverTor.screen;
 
 import _1ms.McOverTor.manager.TorOption;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.PlainTextButton;
-import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.ConfirmLinkScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen;
 import net.minecraft.network.chat.Component;
-
-import java.util.Objects;
+import org.jspecify.annotations.NullMarked;
 
 import static _1ms.McOverTor.Main.*;
 
+@NullMarked
 public class Settings extends Screen { //Non-changing parts of the buttons in the settings screen, pre-declared once the UI is opened for the 1st time.
 
 //UI constructor, gets executed only when UI is opened, we set the tooltips here.
@@ -55,7 +53,7 @@ public class Settings extends Screen { //Non-changing parts of the buttons in th
                  .tooltip("Makes it so you cannot ping or connect to servers if Tor isn't turned on, to prevent accidents."));
          this.addRenderableWidget(new SettCheckBox(x-30, y-75, Component.literal("Stream separation"), TorOption.sepStreams)
                  .tooltip("Get a new IP every time you join a server."));
-         this.addRenderableWidget(Button.builder(Component.literal("Done"), _ -> CloseR()).bounds(x+40, y+200, 120, 20).build());
+         this.addRenderableWidget(Button.builder(Component.literal("Done"), _ -> onClose()).bounds(x+40, y+200, 120, 20).build());
          this.addRenderableWidget(new SettCheckBox(x-30, y-30, Component.literal("Left"), "!"+TorOption.isRight));
          this.addRenderableWidget(new SettCheckBox(x+35, y-30, Component.literal("Right"), TorOption.isRight));
          this.addRenderableWidget(new SettCheckBox(x+115, y-30, Component.literal("Upper"), TorOption.isUpper));
@@ -70,11 +68,7 @@ public class Settings extends Screen { //Non-changing parts of the buttons in th
 //Override the close func of the UI so it returns to the multiplayer screen when pressing ESC, not the title screen.
      @Override
      public void onClose() {
-         CloseR();
-     }
-//Return to the mp screen correctly by setting it's parent as the TitleScreen, so it goes there after closing it.
-     private static void CloseR() {
-        Objects.requireNonNull(Minecraft.getInstance()).setScreen(new JoinMultiplayerScreen(new TitleScreen()));
+         this.minecraft.setScreen(new JoinMultiplayerScreen(new TitleScreen()));
      }
 //Override the render func, so we can render the elements above the window.
     @Override
@@ -84,7 +78,7 @@ public class Settings extends Screen { //Non-changing parts of the buttons in th
 
         graphics.text(this.font, verText,2, this.height-10, 0xFFFFFFFF);
 
-        graphics.centeredText(Minecraft.getInstance().font, Component.literal("Tor Buttons position:"), (this.width - 200) / 2+100, this.height / 2 -100, 0xFFFFFFFF);
+        graphics.centeredText(this.minecraft.font, Component.literal("Tor Buttons position:"), (this.width - 200) / 2+100, this.height / 2 -100, 0xFFFFFFFF);
 
 //Line between the vertical and horizontal pos settings.
         graphics.verticalLine(this.width/2, this.height/2-50, this.height/2-90, 0xFFFFFFFF);

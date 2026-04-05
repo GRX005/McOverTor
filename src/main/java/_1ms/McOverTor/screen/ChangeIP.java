@@ -21,7 +21,6 @@
 package _1ms.McOverTor.screen;
 
 import _1ms.McOverTor.manager.TorManager;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.PlainTextButton;
@@ -30,6 +29,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen;
 import net.minecraft.network.chat.Component;
+import org.jspecify.annotations.NonNull;
 
 import static _1ms.McOverTor.Main.*;
 
@@ -59,7 +59,7 @@ public class ChangeIP extends Screen {
     }
 
     @Override
-    public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
+    public void extractRenderState(@NonNull GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
         final int centerY = this.height / 2-10;
         final int centerX = this.width / 2;
         renderWindow(graphics, (this.width - 200) / 2-10, centerY - 30, 220, 100, "McOverTor Connection");

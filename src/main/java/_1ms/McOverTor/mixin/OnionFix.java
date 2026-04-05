@@ -125,15 +125,14 @@ abstract class HandshakeFix {
             method = "<init>(ILjava/lang/String;ILnet/minecraft/network/protocol/handshake/ClientIntent;)V",
             at = @At("HEAD"),
             argsOnly = true,
-            ordinal = 0
-    )
-    private static String restoreHostname(String address, @Local(argsOnly = true, ordinal = 1) int port) {
+            name = "hostName")
+    private static String restoreHostname(String hostName, @Local(argsOnly = true, name = "port") int port) {
         // 'port' here is the fake port (e.g., 40005) passed to the constructor
         if (TorManager.progress == 100 && SettingsMgr.get(TorOption.useTorDNS)) {
             ServerAddress ip = get(port);
             if (ip != null) return ip.getHost();
         }
-        return address;
+        return hostName;
     }
 
     // 2. Fix Port
@@ -141,8 +140,7 @@ abstract class HandshakeFix {
             method = "<init>(ILjava/lang/String;ILnet/minecraft/network/protocol/handshake/ClientIntent;)V",
             at = @At("HEAD"),
             argsOnly = true,
-            ordinal = 1
-    )
+            name = "port")
     private static int restorePort(int port) {
         if (TorManager.progress == 100 && SettingsMgr.get(TorOption.useTorDNS)) {
             ServerAddress ip = get(port);
