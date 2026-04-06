@@ -60,6 +60,7 @@ abstract class MpButtonsAdd extends Screen {
         super(title);
     }
 //TODO The vanilla btns are over these ones.
+    //TODO Try with their default height (20)
     @Inject(method = "init()V", at = @At("HEAD"))
     public void init(CallbackInfo ci) {
         newIpButton = Button.builder(Component.literal("Change IP"),_ -> this.minecraft.setScreen(new ChangeIP()))

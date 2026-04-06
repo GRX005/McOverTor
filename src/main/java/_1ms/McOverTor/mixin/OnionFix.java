@@ -119,15 +119,14 @@ abstract class NettyNoDNS {
 
 @Mixin(ClientIntentionPacket.class)
 abstract class HandshakeFix {
-
+//Since its a record we cant use the variable name, we have to use the ordinal otherwise it wont work.
     // 1. Fix Hostname
     @ModifyVariable(
             method = "<init>(ILjava/lang/String;ILnet/minecraft/network/protocol/handshake/ClientIntent;)V",
             at = @At("HEAD"),
             argsOnly = true,
-            name = "hostName")
-    private static String restoreHostname(String hostName, @Local(argsOnly = true, name = "port") int port) {
-        // 'port' here is the fake port (e.g., 40005) passed to the constructor
+            ordinal = 0)
+    private static String restoreHostname(String hostName, @Local(argsOnly = true, ordinal = 1) int port) {
         if (TorManager.progress == 100 && SettingsMgr.get(TorOption.useTorDNS)) {
             ServerAddress ip = get(port);
             if (ip != null) return ip.getHost();
@@ -140,7 +139,7 @@ abstract class HandshakeFix {
             method = "<init>(ILjava/lang/String;ILnet/minecraft/network/protocol/handshake/ClientIntent;)V",
             at = @At("HEAD"),
             argsOnly = true,
-            name = "port")
+            ordinal = 1)
     private static int restorePort(int port) {
         if (TorManager.progress == 100 && SettingsMgr.get(TorOption.useTorDNS)) {
             ServerAddress ip = get(port);
