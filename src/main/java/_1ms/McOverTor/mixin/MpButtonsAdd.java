@@ -26,12 +26,11 @@ import _1ms.McOverTor.manager.TorOption;
 import _1ms.McOverTor.screen.ChangeIP;
 import _1ms.McOverTor.screen.Region;
 import _1ms.McOverTor.screen.Settings;
-import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.SpriteIconButton;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen;
-import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.components.SpriteIconButton;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import org.spongepowered.asm.mixin.Mixin;
@@ -39,8 +38,6 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-
-import java.util.Objects;
 
 import static _1ms.McOverTor.manager.TorManager.progress;
 
@@ -70,7 +67,7 @@ abstract class MpButtonsAdd extends Screen {
         settButton = SpriteIconButton.builder(Component.literal("Tor options"),_ -> this.minecraft.setScreen(new Settings()),false)
                 .size(26,26).sprite(Identifier.fromNamespaceAndPath("mcovertor","settings"),22,22).build();
 
-        regButton = SpriteIconButton.builder(Component.literal("Tor regions"),_ -> Objects.requireNonNull(Minecraft.getInstance()).setScreen(new Region()),true)
+        regButton = SpriteIconButton.builder(Component.literal("Tor regions"),_ -> this.minecraft.setScreen(new Region()),true)
                 .size(26,26).sprite(Identifier.fromNamespaceAndPath("mcovertor", "globe"),22,22).build();
 
         torButton = Button.builder(Component.literal("Tor: "+(progress==100?"§aON":"§cOFF")),_ -> TorBtnFunc()).size(95,21).build();
@@ -98,7 +95,7 @@ abstract class MpButtonsAdd extends Screen {
             TorManager.startTor();
         } else {
             TorManager.exitTor(true);
-            Objects.requireNonNull(Minecraft.getInstance()).setScreen(new JoinMultiplayerScreen(new TitleScreen()));
+            this.minecraft.setScreen(new JoinMultiplayerScreen(new TitleScreen()));
         }
     }
 
