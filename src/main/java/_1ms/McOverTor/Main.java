@@ -24,9 +24,9 @@ import _1ms.McOverTor.manager.SettingsMgr;
 import _1ms.McOverTor.manager.TorManager;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.text.Text;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.network.chat.Component;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -39,11 +39,11 @@ import java.nio.file.Path;
 public class Main implements ModInitializer {
     public static final Path confPath = FabricLoader.getInstance().getGameDir().resolve("mcovertor");
     public static final boolean isLinux = System.getProperty("os.name").toLowerCase().contains("linux");
-    public static final Logger logger = LogManager.getLogger("McOverTor");
+    public static final Logger logger = LogManager.getLogger("McOverTor");//TODO Logger different in default fabric?
 
-    public final static Text madeByText = Text.literal("Made by _1ms.");
+    public final static Component madeByText = Component.literal("Made by _1ms.");
     public final static URI githubUrl = URI.create("https://github.com/GRX005");
-    public final static Text verText = Text.literal("McOverTor " +
+    public final static Component verText = Component.literal("McOverTor " +
             FabricLoader.getInstance().getModContainer("mcovertor")
                     .map(mod -> mod.getMetadata().getVersion().getFriendlyString())
                     .orElse("unknown version"));
@@ -77,21 +77,20 @@ public class Main implements ModInitializer {
     }
 
     //Render the window around the mod's UI elements in different shapes.
-    public static void renderWindow(DrawContext context, int x, int y, int windowWidth, int windowHeight, String text) {
+    public static void renderWindow(GuiGraphicsExtractor graphics, int x, int y, int windowWidth, int windowHeight, String text) {
         final int color = 0xFFFFFFFF;
         //Background
-        context.fill(x, y, x + windowWidth, y + windowHeight, 0x80000000);
-
+        graphics.fill(x, y, x + windowWidth, y + windowHeight, 0x80000000);
 
         final int bor1 = x + windowWidth / 2 - 65;
         final int bor2 = x + windowWidth / 2 + 65;
 
-        context.fill(x, y, bor1, y + 1, color);               // Top borders
-        context.fill(x+windowWidth, y, bor2, y + 1, color);
-        context.drawCenteredTextWithShadow(MinecraftClient.getInstance().textRenderer, text, bor1 + (bor2 - bor1)/2, y-5, color); //Top text
-        context.fill(x, y + windowHeight - 1, x + windowWidth, y + windowHeight, color);  // Bottom border
-        context.fill(x, y, x + 1, y + windowHeight, color);              // left border
-        context.fill(x + windowWidth - 1, y, x + windowWidth, y + windowHeight, color);   // right border
+        graphics.fill(x, y, bor1, y + 1, color);               // Top borders
+        graphics.fill(x+windowWidth, y, bor2, y + 1, color);
+        graphics.centeredText(Minecraft.getInstance().font, text, bor1 + (bor2 - bor1)/2, y-5, color); //Top text
+        graphics.fill(x, y + windowHeight - 1, x + windowWidth, y + windowHeight, color);  // Bottom border
+        graphics.fill(x, y, x + 1, y + windowHeight, color);              // left border
+        graphics.fill(x + windowWidth - 1, y, x + windowWidth, y + windowHeight, color);   // right border
     }
 
     //Extract all Tor files.
@@ -107,11 +106,11 @@ public class Main implements ModInitializer {
         TorManager.extractTor("/tor/geoip6", "geoip6");
     }
 
-    public static void drawBorder(DrawContext context, int x, int y, int width, int height, int color) {
-        context.fill(x, y, x + width, y + 1, color);
-        context.fill(x, y + height - 1, x + width, y + height, color);
-        context.fill(x, y + 1, x + 1, y + height - 1, color);
-        context.fill(x + width - 1, y + 1, x + width, y + height - 1, color);
+    public static void drawBorder(GuiGraphicsExtractor graphics, int x, int y, int width, int height, int color) {
+        graphics.fill(x, y, x + width, y + 1, color);
+        graphics.fill(x, y + height - 1, x + width, y + height, color);
+        graphics.fill(x, y + 1, x + 1, y + height - 1, color);
+        graphics.fill(x + width - 1, y + 1, x + width, y + height - 1, color);
     }
 
 }

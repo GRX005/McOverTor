@@ -21,53 +21,54 @@
 package _1ms.McOverTor.screen;
 
 import _1ms.McOverTor.manager.RegionMgr;
+import _1ms.McOverTor.manager.RegionMgr.TorRegionInfo;
 import _1ms.McOverTor.manager.TorManager;
 import _1ms.McOverTor.manager.TorOption;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.Click;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.ConfirmLinkScreen;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.TitleScreen;
-import net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen;
-import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
-import net.minecraft.client.gui.tooltip.Tooltip;
-import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.gui.widget.EntryListWidget;
-import net.minecraft.client.gui.widget.PressableTextWidget;
-import net.minecraft.client.sound.PositionedSoundInstance;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.text.Text;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.components.AbstractSelectionList;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.PlainTextButton;
+import net.minecraft.client.gui.narration.NarrationElementOutput;
+import net.minecraft.client.gui.screens.ConfirmLinkScreen;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
+import net.minecraft.network.chat.Component;
+import net.minecraft.sounds.SoundEvents;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.NullMarked;
 
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 import static _1ms.McOverTor.Main.*;
-import static _1ms.McOverTor.manager.RegionMgr.TorRegionInfo;
 import static _1ms.McOverTor.manager.SettingsMgr.get;
 
+// TODO(Ravel): ambiguous static import, members with name TorRegionInfo have different new names
+//
+
 public class Region extends Screen {
-    private static final List<TorRegionInfo> regions = RegionMgr.getCtr();
-    private static final Set<String> usedR = RegionMgr.getSelCtr();
-    static final SettCheckBox multiRegion = new SettCheckBox(0,0,Text.literal("Enforce for all nodes"), TorOption.allNodes);
-    static final ButtonWidget closeBtn = ButtonWidget.builder(Text.literal("Done"), btn-> closeBtnF()).build();
-    static final ButtonWidget resetBtn = ButtonWidget.builder(Text.literal("Reset"), btn-> usedR.clear()).size(100,20).build();
-    private static TorRegionList regList;
-    private static Set<String> snapshot;
-    private static boolean blSnap;
+    private final List<TorRegionInfo> regions = RegionMgr.getCtr();
+    private final Set<String> usedR = RegionMgr.getSelCtr();
+    private TorRegionList regList;
+    private final Set<String> snapshot;
+    private final boolean blSnap;
 
     public Region() {//Take a snapshot of the options, so when the menu is closed we can see what changed.
-        super(Text.literal("Tor Region Selector"));
+        super(Component.literal("Tor Region Selector"));
         snapshot = new HashSet<>(usedR);
         blSnap = get(TorOption.allNodes);
     }
 
-    private static void closeFunc() {
-        MinecraftClient.getInstance().setScreen(new MultiplayerScreen(new TitleScreen()));
+    private void closeFunc() {
+        this.minecraft.setScreen(new JoinMultiplayerScreen(new TitleScreen()));
     }
 //Switch between multi or single node application, and/or apply the change of countries
-    private static void closeBtnF() {
+    private void closeBtnF() {
         if(!usedR.equals(snapshot)) {//If the selected countries changed
             RegionMgr.modRegions(usedR);
             checkAndRelaunch();
@@ -82,7 +83,7 @@ public class Region extends Screen {
          closeFunc();
     }
 
-    private static void checkAndRelaunch() {
+    private void checkAndRelaunch() {
         if(TorManager.progress == 100) {
             TorManager.exitTor(true);
             TorManager.startTor();
@@ -90,74 +91,63 @@ public class Region extends Screen {
         }
         closeFunc();
     }
-
+//TODO TEST OptionsSubScreen?, open from mod
     @Override
     protected void init() {
         super.init();
-
-        closeBtn.setFocused(false);
-        resetBtn.setFocused(false);
+     //TODO ASYNC? measure time.
         if(regList==null) {//Create the list UI and add the regions' names.
-            regList = new TorRegionList(this.client,0,0,0,20);
+            regList = new TorRegionList(this.minecraft,0,0,0,20);
             regions.forEach(regList::addItem);
         }
-        //We need to upd the pos of the list like this to ensure the list's entries are correctly placed after window resizing in 1.21.9&+
+        //We need to upd the pos of the list like this to ensure the list's entries are correctly placed after window resizing in 1.21.9&+ (This list aligns with vanilla mostly)
         //x: 130
-        regList.position(255,300, this.width/2-130, this.height/2-175);
+        regList.updateSizeAndPosition(255,300, this.width/2-130, this.height/2-175);
 
-        multiRegion.setPosition(this.width/2-75, this.height/2+132);//135
-        closeBtn.setPosition(this.width / 2 - 75, this.height/2+175);
-        resetBtn.setPosition(this.width / 2 - 50, this.height/2+152);
+        this.addRenderableWidget(new SettCheckBox(this.width/2-75, this.height/2+132, Component.literal("Enforce for all nodes"), TorOption.allNodes)
+                .tooltip("Make the selection(s) also apply to the Entry and Middle nodes, not just the ExitNode."));
 
-        multiRegion.setTooltip(Tooltip.of(Text.literal("Make the selection(s) also apply to the Entry and Middle nodes, not just the ExitNode.")));
+        this.addRenderableWidget(Button.builder(Component.literal("Done"), _ -> closeBtnF()).pos(this.width / 2 - 75, this.height/2+175).build());
+        this.addRenderableWidget(Button.builder(Component.literal("Reset"), _ -> usedR.clear()).size(100,20).pos(this.width / 2 - 50, this.height/2+152).build());
+        this.addRenderableWidget(regList);
 
-        var txtW = this.textRenderer.getWidth(madeByText);
-        this.addDrawableChild(new PressableTextWidget(this.width-txtW-2,this.height-10,txtW,10, madeByText,
-                ConfirmLinkScreen.opening(this, githubUrl), this.textRenderer));
-
-        this.addSelectableChild(multiRegion);
-        this.addSelectableChild(closeBtn);
-        this.addSelectableChild(resetBtn);
-        this.addSelectableChild(regList);
+        var txtW = this.font.width(madeByText);
+        this.addRenderableWidget(new PlainTextButton(this.width-txtW-2,this.height-10,txtW,10, madeByText,
+                ConfirmLinkScreen.confirmLink(this, githubUrl), this.font));
     }
 
     @Override
-    public void close() {
-        usedR.clear();//Restore when the user exits with ESC instead of the done btn
+    public void onClose() {
+        usedR.clear();//Restore when the user exits with ESC instead of the done btn which saves it
         usedR.addAll(snapshot);
         closeFunc();
     }
 
     @Override
-    public void render(DrawContext context, int mouseX, int mouseY, float deltaTicks) {
-        super.render(context,mouseX,mouseY,deltaTicks);
+    public void extractRenderState(@NonNull GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
+        renderWindow(graphics, this.width/2-150, this.height/2-200, 300, 400, "McOverTor Regions");
+        super.extractRenderState(graphics, mouseX,  mouseY, a);
 
-        context.drawTextWithShadow(this.textRenderer, verText,2, this.height-10, 0xFFFFFFFF);
-
-        renderWindow(context, this.width/2-150, this.height/2-200, 300, 400, "McOverTor Regions");
-        regList.render(context,mouseX,mouseY,deltaTicks);
-
-        multiRegion.render(context,mouseX,mouseY,deltaTicks);
-        closeBtn.render(context,mouseX,mouseY,deltaTicks);
-        resetBtn.render(context,mouseX,mouseY,deltaTicks);
+        graphics.text(this.font, verText,2, this.height-10, 0xFFFFFFFF);
 
         if(usedR.isEmpty())
-            context.drawCenteredTextWithShadow(this.textRenderer, "none selected -> Tor decides",this.width/2 ,this.height/2-190, 0xFFFFFFFF);
+            graphics.centeredText(this.font, "none selected -> Tor decides",this.width/2 ,this.height/2-190, 0xFFFFFFFF);
     }
-//Use the default MC list widget to create our own.
-    private static class TorRegionList extends EntryListWidget<TorRegionList.TorRegion> {
-        public TorRegionList(MinecraftClient client, int width, int height, int y, int itemsHeight) {
+    //Use the default MC list widget to create our own.
+    @NullMarked
+    private class TorRegionList extends AbstractSelectionList<TorRegionList.TorRegion> {
+        public TorRegionList(Minecraft client, int width, int height, int y, int itemsHeight) {
             super(client, width, height, y, itemsHeight);
         }
 //Correctly position the scrollbar so it aligns to the list's width properly
         @Override
-        protected int getScrollbarX() {
+        protected int scrollBarX() {
             return this.getRowRight()+12;
         }
 
         @Override
-        protected void appendClickableNarrations(NarrationMessageBuilder builder) {
-            this.appendDefaultNarrations(builder);
+        protected void updateWidgetNarration(NarrationElementOutput builder) {
+            this.defaultButtonNarrationText(builder);
         }
 
         // Add entries to the list
@@ -166,56 +156,63 @@ public class Region extends Screen {
         }
 
         // Entry class for each item in the list
-        private class TorRegion extends EntryListWidget.Entry<TorRegion> {
-            private final Text text;
+        private class TorRegion extends AbstractSelectionList.Entry<TorRegion> {
+            private final Component text;
             private final String code;
             private final int ind;
 
             public TorRegion(String text, String code, int ind) {
-                this.text = Text.literal(text);
+                this.text = Component.literal(text);
                 this.code = code;
                 this.ind = ind;
             }
 
             @Override
-            public void render(DrawContext context, int mouseX, int mouseY, boolean hovered, float deltaTicks) {
-                //y+4
+            public void extractContent(GuiGraphicsExtractor graphics, int mouseX, int mouseY, boolean hovered, float a) {
                 var regList = TorRegionList.this;
                 var x = regList.getRowLeft();
                 var y = regList.getRowTop(ind);
                 //X and Y has been replaced by the mouse versions, now we get the row coordinates from the parent, rowleft is the same for all, for the top of the row we need to know which row is it?
-                context.drawTextWithShadow(MinecraftClient.getInstance().textRenderer, text, x+2, y+6, 0xFFFFFFFF);
+                graphics.text(regList.minecraft.font, text, x+2, y+6, 0xFFFFFFFF);
                 if (usedR.contains(code))
-                    drawTick(context,x-19,y);
+                    drawTick(graphics,x-19,y);
             }
 
             @Override
-            public boolean mouseClicked(Click click, boolean doubled) {
+            public boolean mouseClicked(MouseButtonEvent click, boolean doubled) {
                 // Handle click events
                 if(usedR.contains(code))
                     usedR.remove(code);
                 else
                     usedR.add(code);
-                MinecraftClient.getInstance().getSoundManager().play(PositionedSoundInstance.ui(SoundEvents.UI_BUTTON_CLICK, 1.0F));
+                regList.minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
                 return true;
             }
 
-            void drawTick(DrawContext context, int x, int y) {
+            void drawTick(GuiGraphicsExtractor graphics, int x, int y) {
+                // Get the current GUI scale
+                double guiScale = Minecraft.getInstance().getWindow().getGuiScale();
+                // Calculate how many logical units equal exactly 1 physical screen pixel
+                float screenPixelOffset = (float) (1.0 / guiScale);
+                // Push the JOML matrix state
+                graphics.pose().pushMatrix();
+                // Translate by the exact fraction needed to move it 1 screen pixel to the left
+                graphics.pose().translate(-screenPixelOffset, 0);
                 // First segment: from (x+4, y+9) to (x+8, y+13)
                 for (int i = 0; i <= 4; i++) {
                     int xi = x + 4 + i;
                     int yi = y + 9 + i;
-                    context.drawHorizontalLine(xi, xi + 1, yi, 0xFF00FF00);
+                    graphics.horizontalLine(xi, xi + 1, yi, 0xFF00FF00);
                 }
                 // Second segment: from (x+8, y+13) to (x+16, y+5)
                 for (int i = 0; i <= 8; i++) {
                     int xi = x + 8 + i;
                     int yi = y + 13 - i;
-                    context.drawHorizontalLine(xi, xi + 1, yi, 0xFF00FF00);
+                    graphics.horizontalLine(xi, xi + 1, yi, 0xFF00FF00);
                 }
+                // Pop the JOML matrix state to restore previous rendering positions
+                graphics.pose().popMatrix();
             }
         }
     }
 }
-
-

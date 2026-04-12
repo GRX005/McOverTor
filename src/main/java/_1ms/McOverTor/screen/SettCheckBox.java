@@ -22,48 +22,43 @@ package _1ms.McOverTor.screen;
 
 import _1ms.McOverTor.manager.SettingsMgr;
 import _1ms.McOverTor.manager.TorOption;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.Click;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
-import net.minecraft.client.gui.widget.ClickableWidget;
-import net.minecraft.text.Text;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.gui.components.Tooltip;
+import net.minecraft.client.gui.narration.NarrationElementOutput;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.network.chat.Component;
+import org.jspecify.annotations.NonNull;
 
 import static _1ms.McOverTor.Main.drawBorder;
 
-public class SettCheckBox extends ClickableWidget {
+public class SettCheckBox extends AbstractWidget {
     private final TorOption val;
     private final String strVal;
 
-    public SettCheckBox(int x, int y, Text text, TorOption val) {
+    public SettCheckBox(int x, int y, Component text, TorOption val) {
         super(x, y, 16, 15, text);
         this.val = val;
         this.strVal = null;
     }
-    public SettCheckBox(int x, int y, Text text, String val) {
+    public SettCheckBox(int x, int y, Component text, String val) {
         super(x, y, 16, 15, text);
         this.strVal = val;
         this.val = null;
     }
-    @Override
-    public void onClick(Click click, boolean doubled) {
-        if(strVal == null)
-            SettingsMgr.flip(val);
-        else
-            SettingsMgr.flip(strVal);
-    }
 
     @Override
-    public void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
+    protected void extractWidgetRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
         final int borderColor = 0xFFFFFFFF;
 
         final int x = this.getX();
         final int y = this.getY();
         //Background
-        context.fill(x, y, x + this.width, y + this.height, 0x80000000);
+        graphics.fill(x, y, x + this.width, y + this.height, 0x80000000);
 
         //Border
-        drawBorder(context, x, y, this.width, this.height, borderColor);
+        drawBorder(graphics, x, y, this.width, this.height, borderColor);
 
         // Draw the "X" if checked
         boolean stuff;
@@ -80,22 +75,35 @@ public class SettCheckBox extends ClickableWidget {
             for (int i = 0; i < size; i++) {
                 // Top-left to bottom-right diagonal with thickness
                 for (int t = 0; t < thickness; t++) {
-                    context.drawVerticalLine(x1 + i + t, y1 + i, y1 + i, borderColor);
+                    graphics.verticalLine(x1 + i + t, y1 + i, y1 + i, borderColor);
                 }
 
                 // Bottom-left to top-right diagonal with thickness
                 for (int t = 0; t < thickness; t++) {
-                    context.drawVerticalLine(x1 + i + t, y1 + size - i - 1, y1 + size - i - 1, borderColor);
+                    graphics.verticalLine(x1 + i + t, y1 + size - i - 1, y1 + size - i - 1, borderColor);
                 }
             }
         }
         //Text
-        context.drawTextWithShadow(MinecraftClient.getInstance().textRenderer, this.getMessage(), x + 24, y + 4, borderColor);
+        graphics.text(Minecraft.getInstance().font, this.getMessage(), x + 24, y + 4, borderColor);
     }
 
     @Override
-    protected void appendClickableNarrations(NarrationMessageBuilder builder) {
-        this.appendDefaultNarrations(builder);
+    public void onClick(@NonNull MouseButtonEvent click, boolean doubled) {
+        if(strVal == null)
+            SettingsMgr.flip(val);
+        else
+            SettingsMgr.flip(strVal);
+    }
+
+    public SettCheckBox tooltip(String tip) {
+        this.setTooltip(Tooltip.create(Component.literal(tip)));
+        return this;
+    }
+
+    @Override
+    protected void updateWidgetNarration(@NonNull NarrationElementOutput builder) {
+        this.defaultButtonNarrationText(builder);
     }
 
 }

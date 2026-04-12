@@ -21,68 +21,60 @@
 package _1ms.McOverTor.screen;
 
 import _1ms.McOverTor.manager.TorManager;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.ConfirmLinkScreen;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.TitleScreen;
-import net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen;
-import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.gui.widget.PressableTextWidget;
-import net.minecraft.text.Text;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.PlainTextButton;
+import net.minecraft.client.gui.screens.ConfirmLinkScreen;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen;
+import net.minecraft.network.chat.Component;
+import org.jspecify.annotations.NonNull;
 
 import static _1ms.McOverTor.Main.*;
 
 public class ChangeIP extends Screen {
-    private final static ButtonWidget closeButton = ButtonWidget.builder(Text.literal("Okay"), buttonWidget -> realClose())
-            .dimensions(0, 0, 120, 20)
-            .build();
     private int status = 0;
+
+    public ChangeIP() {
+        super(Component.literal("Change IP"));
+    }
 
     @Override
     protected void init() {
         super.init();
 
-        closeButton.setFocused(false);
-        closeButton.setPosition(this.width / 2 - 60, this.height / 2 + 30);
-        this.addSelectableChild(closeButton);
+        this.addRenderableWidget(Button.builder(Component.literal("Okay"), _ -> onClose())
+                .bounds(this.width / 2 - 60, this.height / 2 + 30, 120, 20)
+                .build());
 
-        var txtW = this.textRenderer.getWidth(madeByText);
-        this.addDrawableChild(new PressableTextWidget(this.width-txtW-2,this.height-10,txtW,10, madeByText,
-                ConfirmLinkScreen.opening(this, githubUrl), this.textRenderer));
+        var txtW = this.font.width(madeByText);
+        this.addRenderableWidget(new PlainTextButton(this.width-txtW-2,this.height-10,txtW,10, madeByText,
+                ConfirmLinkScreen.confirmLink(this, githubUrl), this.font));
     }
 
     @Override
-    public void close() {
-        realClose();
-    }
-
-    private static void realClose() {
-        MinecraftClient.getInstance().setScreen(new MultiplayerScreen(new TitleScreen()));
-    }
-
-    public ChangeIP() {
-        super(Text.literal("Change IP"));
+    public void onClose() {
+        this.minecraft.setScreen(new JoinMultiplayerScreen(new TitleScreen()));
     }
 
     @Override
-    public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        super.render(context, mouseX, mouseY, delta);
-
-        context.drawTextWithShadow(this.textRenderer,verText,2, this.height-10, 0xFFFFFFFF);
-
+    public void extractRenderState(@NonNull GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
         final int centerY = this.height / 2-10;
         final int centerX = this.width / 2;
+        renderWindow(graphics, (this.width - 200) / 2-10, centerY - 30, 220, 100, "McOverTor Connection");
 
-        renderWindow(context, (this.width - 200) / 2-10, centerY - 30, 220, 100, "McOverTor Connection");
-        closeButton.render(context, mouseX, mouseY, delta);
+        super.extractRenderState(graphics,mouseX,mouseY,a);
+
+        graphics.text(this.font,verText,2, this.height-10, 0xFFFFFFFF);
+
         switch (status) {
             case 0-> { //Will be 0 at first
-                context.drawCenteredTextWithShadow(this.textRenderer, "Changing IP...", centerX, centerY, 0xFFFFFFFF);
-                this.status = TorManager.changeCircuits();
+                graphics.centeredText(this.font, "Changing IP...", centerX, centerY, 0xFFFFFFFF);
+                this.status = TorManager.changeCircuits();//TODO ASYNC
             }
-            case 1-> context.drawCenteredTextWithShadow(this.textRenderer, "You've successfully changed IP.", centerX, centerY, 0xFF00FF00);
-            case 2-> context.drawCenteredTextWithShadow(this.textRenderer, "Failed to change IP!", centerX, centerY, 0xFFFF0000);
+            case 1-> graphics.centeredText(this.font, "You've successfully changed IP.", centerX, centerY, 0xFF00FF00);
+            case 2-> graphics.centeredText(this.font, "Failed to change IP!", centerX, centerY, 0xFFFF0000);
         }
     }
 }

@@ -21,7 +21,7 @@
 package _1ms.McOverTor.manager;
 
 import _1ms.McOverTor.screen.TorConnect;
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.Minecraft;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -52,9 +52,12 @@ public class TorManager {
     private static final Logger logger = LogManager.getLogger("McOverTor/TorControl");
     private static TorConnect connScrn;
 
+    public static volatile boolean failToStart = false;
+    public static volatile boolean failToConn = false;
+
     public static void startTor() {
         TorConnect scrn = new TorConnect();
-        Objects.requireNonNull(MinecraftClient.getInstance()).setScreen(scrn);
+        Objects.requireNonNull(Minecraft.getInstance()).setScreen(scrn);
         connScrn = scrn;
         launchTor();
     }
@@ -91,7 +94,7 @@ public class TorManager {
             logger.info("[McOverTor] Tor has been launched.");
         } catch (IOException e) {
             logger.error("[McOverTor] Failed to launch Tor!");
-            TorConnect.failToStart = true;
+            failToStart = true;
             logger.error(e);
         }
     }
@@ -120,7 +123,7 @@ public class TorManager {
                     progress = Integer.parseInt(line.substring(line.indexOf("Bootstrapped") + 12, line.indexOf("%")).trim());
                     message = line.substring(line.indexOf("%") + 1).trim();
                     logger.info("Progress: {}%, Status: {}", progress, message);
-                    TorConnect.failToConn=false;//Needed here to rm the warn msg from the ui when the connection advances
+                    failToConn=false;//Needed here to rm the warn msg from the ui when the connection advances
                     //Itt meg tudsz hívni egy funkciót ami előrébb viszi a progress bars progress százalékra
                     if (message.contains("(starting)")) { //First bootstrapped msg, init control as soon as possible.
                         authControl();
@@ -136,7 +139,7 @@ public class TorManager {
             }
         } catch (IOException e) {
             logger.error("Error while reading Tor output!");
-            TorConnect.failToStart = true;
+            failToStart = true;
             logger.error(e);
         }
     }
@@ -163,7 +166,7 @@ public class TorManager {
                         prevProg=currProg;
                     }
                     if (counter==10)
-                        TorConnect.failToConn=true;
+                        failToConn=true;
                     Thread.sleep(Duration.ofSeconds(1));
                 } catch (InterruptedException e) {
                     break;
@@ -196,7 +199,7 @@ public class TorManager {
                 resetProg();
             logger.info("[McOverTor] Killed already running Tor.");
         } catch (InterruptedException | IOException ignored) {
-            TorConnect.failToStart = true;
+            failToStart = true;
         }
     }
 
@@ -218,7 +221,7 @@ public class TorManager {
             }
         } catch (IOException e) {
             logger.error("Tor couldn't be started, control port auth error.");
-            TorConnect.failToStart = true;
+            failToStart = true;
         }
         torP.destroy();
     }

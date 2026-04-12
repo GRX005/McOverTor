@@ -28,9 +28,9 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelPromise;
-import net.minecraft.client.network.MultiplayerServerListPinger;
-import net.minecraft.client.network.ServerAddress;
-import net.minecraft.network.packet.c2s.handshake.HandshakeC2SPacket;
+import net.minecraft.client.multiplayer.ServerStatusPinger;
+import net.minecraft.client.multiplayer.resolver.ServerAddress;
+import net.minecraft.network.protocol.handshake.ClientIntentionPacket;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -51,13 +51,13 @@ import static _1ms.McOverTor.manager.TorManager.progress;
 
 //In the connectscreen gui at where it initializes contact to the given server, the arg (orig addr) of the func which tries to resolve the addr is replaced with 127.0.0.1:9050, and saves it in a threadLocal
 
-@Mixin(targets = "net.minecraft.client.gui.screen.multiplayer.ConnectScreen$1")
+@Mixin(targets = "net.minecraft.client.gui.screens.ConnectScreen$1")
 abstract class ChInit {
     @ModifyArg(
             method = "run",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/client/network/AllowedAddressResolver;resolve(Lnet/minecraft/client/network/ServerAddress;)Ljava/util/Optional;"
+                    target = "Lnet/minecraft/client/multiplayer/resolver/ServerNameResolver;resolveAddress(Lnet/minecraft/client/multiplayer/resolver/ServerAddress;)Ljava/util/Optional;"
             )
     )
     private ServerAddress modifyServerAddress(ServerAddress original) {
@@ -71,13 +71,13 @@ abstract class ChInit {
 }
 
 //Does the same as the above but in the server pinger function.
-@Mixin(MultiplayerServerListPinger.class)
+@Mixin(ServerStatusPinger.class)
 abstract class FixPing {
     @ModifyArg(
-            method = "add",
+            method = "pingServer",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/client/network/AllowedAddressResolver;resolve(Lnet/minecraft/client/network/ServerAddress;)Ljava/util/Optional;"
+                    target = "Lnet/minecraft/client/multiplayer/resolver/ServerNameResolver;resolveAddress(Lnet/minecraft/client/multiplayer/resolver/ServerAddress;)Ljava/util/Optional;"
             )
     )
     private ServerAddress modifyServerAddress(ServerAddress original) {
@@ -95,7 +95,7 @@ abstract class NettyNoDNS {
 
     //In the netty connector, make it not resolve the addr once again, we can now connect to the onion addr, as netty's SocketAddress can hold more than just IPv4 and IPv6 addrs, unlike java's InetSocketAddress which mc uses.
     //Also now all DNS will be resolved by Tor.
-    @Inject(method = "doResolveAndConnect0", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "doResolveAndConnect0", at = @At("HEAD"), cancellable = true) //TODO SWITCH TO USING doConnect, does this affect anything?
     private void forceDisableResolver(Channel channel, SocketAddress remoteAddress, SocketAddress localAddress, ChannelPromise promise, CallbackInfoReturnable<ChannelFuture> cir) {
         if(progress == 100 && SettingsMgr.get(TorOption.useTorDNS)) {
             ChannelFuture future = channel.connect(remoteAddress, localAddress, promise);
@@ -108,7 +108,7 @@ abstract class NettyNoDNS {
         if(progress == 100 && SettingsMgr.get(TorOption.useTorDNS)) {
             ServerAddress ip = get(inetPort);
             if(ip != null)
-                cir.setReturnValue(this.connect(InetSocketAddress.createUnresolved(ip.getAddress(), ip.getPort())));
+                cir.setReturnValue(this.connect(InetSocketAddress.createUnresolved(ip.getHost(), ip.getPort())));
         }
     }
 }
@@ -117,32 +117,29 @@ abstract class NettyNoDNS {
 //If we don't do this in the packet the fake 127.0.0.1 IP we gave mc above would be sent, which would cause many srvs to reject the connection with "Invalid hostname", etc.
 //Note that this gets called not just at connect but when pinging an srv too(for every srv in the srv list it's called), but there the packet will be sent with the correct IP by default, only when actually connecting to the srv does this fix execute.
 
-@Mixin(HandshakeC2SPacket.class)
+@Mixin(ClientIntentionPacket.class)
 abstract class HandshakeFix {
-
+//Since its a record we cant use the variable name, we have to use the ordinal otherwise it wont work.
     // 1. Fix Hostname
     @ModifyVariable(
-            method = "<init>(ILjava/lang/String;ILnet/minecraft/network/packet/c2s/handshake/ConnectionIntent;)V",
+            method = "<init>(ILjava/lang/String;ILnet/minecraft/network/protocol/handshake/ClientIntent;)V",
             at = @At("HEAD"),
             argsOnly = true,
-            ordinal = 0
-    )
-    private static String restoreHostname(String address, @Local(argsOnly = true, ordinal = 1) int port) {
-        // 'port' here is the fake port (e.g., 40005) passed to the constructor
+            ordinal = 0)
+    private static String restoreHostname(String hostName, @Local(argsOnly = true, ordinal = 1) int port) {
         if (TorManager.progress == 100 && SettingsMgr.get(TorOption.useTorDNS)) {
             ServerAddress ip = get(port);
-            if (ip != null) return ip.getAddress();
+            if (ip != null) return ip.getHost();
         }
-        return address;
+        return hostName;
     }
 
     // 2. Fix Port
     @ModifyVariable(
-            method = "<init>(ILjava/lang/String;ILnet/minecraft/network/packet/c2s/handshake/ConnectionIntent;)V",
+            method = "<init>(ILjava/lang/String;ILnet/minecraft/network/protocol/handshake/ClientIntent;)V",
             at = @At("HEAD"),
             argsOnly = true,
-            ordinal = 1
-    )
+            ordinal = 1)
     private static int restorePort(int port) {
         if (TorManager.progress == 100 && SettingsMgr.get(TorOption.useTorDNS)) {
             ServerAddress ip = get(port);
