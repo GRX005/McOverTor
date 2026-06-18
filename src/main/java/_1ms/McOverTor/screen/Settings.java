@@ -21,7 +21,6 @@
 package _1ms.McOverTor.screen;
 
 import _1ms.McOverTor.manager.TorOption;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ConfirmLinkScreen;
 import net.minecraft.client.gui.screen.Screen;
@@ -32,19 +31,17 @@ import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.PressableTextWidget;
 import net.minecraft.text.Text;
 
-import java.util.Objects;
-
 import static _1ms.McOverTor.Main.*;
 
 public class Settings extends Screen { //Non-changing parts of the buttons in the settings screen, pre-declared once the UI is opened for the 1st time.
-    private final static SettCheckBox preventNonTor = new SettCheckBox(0, 0, Text.literal("Prevent non-Tor connections"), TorOption.torOnly);
-    private final static SettCheckBox sepStr = new SettCheckBox(0, 0, Text.literal("Stream separation"), TorOption.sepStreams);
-    private final static SettCheckBox left = new SettCheckBox(0, 0, Text.literal("Left"), "!"+TorOption.isRight);
-    private final static SettCheckBox right = new SettCheckBox(0, 0, Text.literal("Right"), TorOption.isRight);
-    private final static SettCheckBox upper = new SettCheckBox(0, 0, Text.literal("Upper"), TorOption.isUpper);
-    private final static SettCheckBox lower = new SettCheckBox(0, 0, Text.literal("Lower"), "!"+TorOption.isUpper);
-    private final static SettCheckBox torDNS = new SettCheckBox(0,0, Text.literal("Resolve DNS using Tor"), TorOption.useTorDNS);
-    private final static ButtonWidget doneBtn = ButtonWidget.builder(Text.literal("Done"), btn -> CloseR()).dimensions(0, 0, 120, 20).build();
+    private final SettCheckBox preventNonTor = new SettCheckBox(0, 0, Text.literal("Prevent non-Tor connections"), TorOption.torOnly);
+    private final SettCheckBox sepStr = new SettCheckBox(0, 0, Text.literal("Stream separation"), TorOption.sepStreams);
+    private final SettCheckBox left = new SettCheckBox(0, 0, Text.literal("Left"), "!"+TorOption.isRight);
+    private final SettCheckBox right = new SettCheckBox(0, 0, Text.literal("Right"), TorOption.isRight);
+    private final SettCheckBox upper = new SettCheckBox(0, 0, Text.literal("Upper"), TorOption.isUpper);
+    private final SettCheckBox lower = new SettCheckBox(0, 0, Text.literal("Lower"), "!"+TorOption.isUpper);
+    private final SettCheckBox torDNS = new SettCheckBox(0,0, Text.literal("Resolve DNS using Tor"), TorOption.useTorDNS);
+    private final ButtonWidget doneBtn = ButtonWidget.builder(Text.literal("Done"), btn -> close()).dimensions(0, 0, 120, 20).build();
 
 //UI constructor, gets executed only when UI is opened, we set the tooltips here.
     public Settings() {
@@ -87,11 +84,7 @@ public class Settings extends Screen { //Non-changing parts of the buttons in th
 //Override the close func of the UI so it returns to the multiplayer screen when pressing ESC, not the title screen.
      @Override
      public void close() {
-         CloseR();
-     }
-//Return to the mp screen correctly by setting it's parent as the TitleScreen, so it goes there after closing it.
-     private static void CloseR() {
-        Objects.requireNonNull(MinecraftClient.getInstance()).setScreen(new MultiplayerScreen(new TitleScreen()));
+         this.client.setScreen(new MultiplayerScreen(new TitleScreen()));
      }
 //Override the render func, so we can render the elements above the window.
     @Override
@@ -104,7 +97,7 @@ public class Settings extends Screen { //Non-changing parts of the buttons in th
         preventNonTor.render(context, mouseX, mouseY, delta);
         sepStr.render(context, mouseX, mouseY, delta);
         doneBtn.render(context, mouseX, mouseY, delta);
-        context.drawCenteredTextWithShadow(MinecraftClient.getInstance().textRenderer, Text.literal("Tor Buttons position:"), (this.width - 200) / 2+100, this.height / 2 -100, 0xFFFFFFFF);
+        context.drawCenteredTextWithShadow(this.textRenderer, Text.literal("Tor Buttons position:"), (this.width - 200) / 2+100, this.height / 2 -100, 0xFFFFFFFF);
         left.render(context, mouseX, mouseY, delta);
         right.render(context, mouseX, mouseY, delta);
         upper.render(context, mouseX, mouseY, delta);

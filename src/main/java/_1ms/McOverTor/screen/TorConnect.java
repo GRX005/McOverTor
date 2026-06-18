@@ -21,7 +21,6 @@
 package _1ms.McOverTor.screen;
 
 import _1ms.McOverTor.manager.TorManager;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ConfirmLinkScreen;
 import net.minecraft.client.gui.screen.Screen;
@@ -31,8 +30,6 @@ import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.PressableTextWidget;
 import net.minecraft.text.Text;
 
-import java.util.Objects;
-
 import static _1ms.McOverTor.Main.*;
 import static _1ms.McOverTor.manager.TorManager.progress;
 
@@ -40,9 +37,9 @@ public class TorConnect extends Screen {
     //private static final Identifier IMAGE_ID = Identifier.of("mcovertor", "tor");
     public static volatile boolean failToStart = false;
     public static volatile boolean failToConn = false;
-    private final static ButtonWidget closeButton = ButtonWidget.builder(Text.literal("Okay"), Btn -> realClose())
+    private final ButtonWidget closeButton = ButtonWidget.builder(Text.literal("Okay"), Btn -> close())
             .dimensions(0, 0, 120, 20).build();
-    private final static ButtonWidget cancelButton = ButtonWidget.builder(Text.literal("Cancel"), Btn -> cancelBtnFunc())
+    private final ButtonWidget cancelButton = ButtonWidget.builder(Text.literal("Cancel"), Btn -> cancelBtnFunc())
             .dimensions(0, 0, 120, 20).build();
 
     public TorConnect() {
@@ -77,18 +74,17 @@ public class TorConnect extends Screen {
 
     @Override
     public void close() {
-        realClose();
+        this.client.setScreen(new MultiplayerScreen(new TitleScreen()));
     }
 //After 5% we estabilish a control port conn with Tor so we can close it gracefully.
-    private static void cancelBtnFunc() {
+    private void cancelBtnFunc() {
         if(progress < 5)
             TorManager.killTor(false, true);
         else
             TorManager.exitTor(true);
-        realClose();
+        close();
     }
 
-    private static void realClose() { Objects.requireNonNull(MinecraftClient.getInstance()).setScreen(new MultiplayerScreen(new TitleScreen())); }
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {

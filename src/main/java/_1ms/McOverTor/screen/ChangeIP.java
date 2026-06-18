@@ -21,7 +21,6 @@
 package _1ms.McOverTor.screen;
 
 import _1ms.McOverTor.manager.TorManager;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ConfirmLinkScreen;
 import net.minecraft.client.gui.screen.Screen;
@@ -34,7 +33,7 @@ import net.minecraft.text.Text;
 import static _1ms.McOverTor.Main.*;
 
 public class ChangeIP extends Screen {
-    private final static ButtonWidget closeButton = ButtonWidget.builder(Text.literal("Okay"), buttonWidget -> realClose())
+    private final ButtonWidget closeButton = ButtonWidget.builder(Text.literal("Okay"), buttonWidget -> close())
             .dimensions(0, 0, 120, 20)
             .build();
     private int status = 0;
@@ -54,11 +53,7 @@ public class ChangeIP extends Screen {
 
     @Override
     public void close() {
-        realClose();
-    }
-
-    private static void realClose() {
-        MinecraftClient.getInstance().setScreen(new MultiplayerScreen(new TitleScreen()));
+        this.client.setScreen(new MultiplayerScreen(new TitleScreen()));
     }
 
     public ChangeIP() {

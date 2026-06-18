@@ -14,7 +14,7 @@ The mod is compatible with **Windows and Linux**.
 More over at: https://modrinth.com/mod/mcovertor
 
 ## To build:
-You need at least v9.2.0 of the gradle wrapper for it to build, and jdk 21.
+You need at least v9.4.0 of the gradle wrapper for it to build, and jdk 21.
 
 If you are using IntelliJ, it might automatically download the wrong version for it, before cloning you can set it at this path:
 

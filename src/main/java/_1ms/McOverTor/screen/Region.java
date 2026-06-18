@@ -48,14 +48,14 @@ import static _1ms.McOverTor.manager.RegionMgr.TorRegionInfo;
 import static _1ms.McOverTor.manager.SettingsMgr.get;
 
 public class Region extends Screen {
-    private static final List<TorRegionInfo> regions = RegionMgr.getCtr();
-    private static final Set<String> usedR = RegionMgr.getSelCtr();
-    static final SettCheckBox multiRegion = new SettCheckBox(0,0,Text.literal("Enforce for all nodes"), TorOption.allNodes);
-    static final ButtonWidget closeBtn = ButtonWidget.builder(Text.literal("Done"), btn-> closeBtnF()).build();
-    static final ButtonWidget resetBtn = ButtonWidget.builder(Text.literal("Reset"), btn-> usedR.clear()).size(100,20).build();
-    private static TorRegionList regList;
-    private static Set<String> snapshot;
-    private static boolean blSnap;
+    private final List<TorRegionInfo> regions = RegionMgr.getCtr();
+    private final Set<String> usedR = RegionMgr.getSelCtr();
+    private final SettCheckBox multiRegion = new SettCheckBox(0,0,Text.literal("Enforce for all nodes"), TorOption.allNodes);
+    private final ButtonWidget closeBtn = ButtonWidget.builder(Text.literal("Done"), btn-> closeBtnF()).build();
+    private final ButtonWidget resetBtn = ButtonWidget.builder(Text.literal("Reset"), btn-> usedR.clear()).size(100,20).build();
+    private TorRegionList regList;
+    private final Set<String> snapshot;
+    private final boolean blSnap;
 
     public Region() {//Take a snapshot of the options, so when the menu is closed we can see what changed.
         super(Text.literal("Tor Region Selector"));
@@ -63,11 +63,11 @@ public class Region extends Screen {
         blSnap = get(TorOption.allNodes);
     }
 
-    private static void closeFunc() {
-        MinecraftClient.getInstance().setScreen(new MultiplayerScreen(new TitleScreen()));
+    private void closeFunc() {
+        this.client.setScreen(new MultiplayerScreen(new TitleScreen()));
     }
 //Switch between multi or single node application, and/or apply the change of countries
-    private static void closeBtnF() {
+    private void closeBtnF() {
         if(!usedR.equals(snapshot)) {//If the selected countries changed
             RegionMgr.modRegions(usedR);
             checkAndRelaunch();
@@ -82,7 +82,7 @@ public class Region extends Screen {
          closeFunc();
     }
 
-    private static void checkAndRelaunch() {
+    private void checkAndRelaunch() {
         if(TorManager.progress == 100) {
             TorManager.exitTor(true);
             TorManager.startTor();
@@ -145,7 +145,7 @@ public class Region extends Screen {
             context.drawCenteredTextWithShadow(this.textRenderer, "none selected -> Tor decides",this.width/2 ,this.height/2-190, 0xFFFFFFFF);
     }
 //Use the default MC list widget to create our own.
-    private static class TorRegionList extends EntryListWidget<TorRegionList.TorRegion> {
+    private class TorRegionList extends EntryListWidget<TorRegionList.TorRegion> {
         public TorRegionList(MinecraftClient client, int width, int height, int y, int itemsHeight) {
             super(client, width, height, y, itemsHeight);
         }
@@ -184,7 +184,7 @@ public class Region extends Screen {
                 var x = regList.getRowLeft();
                 var y = regList.getRowTop(ind);
                 //X and Y has been replaced by the mouse versions, now we get the row coordinates from the parent, rowleft is the same for all, for the top of the row we need to know which row is it?
-                context.drawTextWithShadow(MinecraftClient.getInstance().textRenderer, text, x+2, y+6, 0xFFFFFFFF);
+                context.drawTextWithShadow(TorRegionList.this.client.textRenderer, text, x+2, y+6, 0xFFFFFFFF);
                 if (usedR.contains(code))
                     drawTick(context,x-19,y);
             }
@@ -196,7 +196,7 @@ public class Region extends Screen {
                     usedR.remove(code);
                 else
                     usedR.add(code);
-                MinecraftClient.getInstance().getSoundManager().play(PositionedSoundInstance.ui(SoundEvents.UI_BUTTON_CLICK, 1.0F));
+                TorRegionList.this.client.getSoundManager().play(PositionedSoundInstance.ui(SoundEvents.UI_BUTTON_CLICK, 1.0F));
                 return true;
             }
 
