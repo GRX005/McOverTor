@@ -55,7 +55,7 @@ public class ChangeIP extends Screen {
 
     @Override
     public void onClose() {
-        this.minecraft.setScreen(new JoinMultiplayerScreen(new TitleScreen()));
+        this.minecraft.setScreenAndShow(new JoinMultiplayerScreen(new TitleScreen()));
     }
 
     @Override

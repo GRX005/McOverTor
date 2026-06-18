@@ -57,7 +57,7 @@ public class TorManager {
 
     public static void startTor() {
         TorConnect scrn = new TorConnect();
-        Objects.requireNonNull(Minecraft.getInstance()).setScreen(scrn);
+        Objects.requireNonNull(Minecraft.getInstance()).setScreenAndShow(scrn);
         connScrn = scrn;
         launchTor();
     }

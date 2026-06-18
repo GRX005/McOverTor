@@ -68,7 +68,7 @@ public class Settings extends Screen { //Non-changing parts of the buttons in th
 //Override the close func of the UI so it returns to the multiplayer screen when pressing ESC, not the title screen.
      @Override
      public void onClose() {
-         this.minecraft.setScreen(new JoinMultiplayerScreen(new TitleScreen()));
+         this.minecraft.setScreenAndShow(new JoinMultiplayerScreen(new TitleScreen()));
      }
 //Override the render func, so we can render the elements above the window.
     @Override

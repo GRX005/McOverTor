@@ -68,7 +68,7 @@ public class TorConnect extends Screen {
 
     @Override
     public void onClose() {
-        this.minecraft.setScreen(new JoinMultiplayerScreen(new TitleScreen()));
+        this.minecraft.setScreenAndShow(new JoinMultiplayerScreen(new TitleScreen()));
     }
 //After 5% we estabilish a control port conn with Tor so we can close it gracefully.
     private void cancelBtnFunc() {
