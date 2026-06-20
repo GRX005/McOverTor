@@ -29,8 +29,11 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.Objects;
 
 import static _1ms.McOverTor.Main.*;
+import static _1ms.McOverTor.manager.TorManager.getHash;
+import static _1ms.McOverTor.manager.TorManager.hash;
 
 public class SettingsMgr {
     private static final Path settConf = confPath.resolve("config.cfg");
@@ -61,6 +64,7 @@ public class SettingsMgr {
                 throw new RuntimeException(e);
             }
             reConf();
+            AllTorExtract();
             return;
         }
         settings = loadConfig();
@@ -85,7 +89,9 @@ public class SettingsMgr {
 //Load the mod's cfg, to upd the tor client used -> upd the cfg version
     private static HashMap<TorOption, Boolean> loadConfig() {
         try (BufferedReader reader = Files.newBufferedReader(settConf)) {
-            if(!reader.readLine().equals(ver)) { // Skip the version line
+            if (!Objects.equals(getHash(Files.newInputStream(confPath.resolve("tor"))), hash))
+                AllTorExtract(); //Upd if the hash doesnt match.
+            if(!reader.readLine().equals(ver)) { // Skip the version line, and upd cfg if it doesnt match.
                 FileUtils.deleteDirectory(confPath.toFile());
                 Files.createDirectory(confPath);
                 reConf();
@@ -101,7 +107,6 @@ public class SettingsMgr {
 
     private static void reConf() {
         saveConfig(true);
-        AllTorExtract();
         logger.info("Updated config.");
     }
 }

@@ -30,12 +30,17 @@ import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermissions;
+import java.security.DigestInputStream;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
+import java.util.HexFormat;
 import java.util.Objects;
 import java.util.Random;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
 
-import static _1ms.McOverTor.Main.confPath;
-import static _1ms.McOverTor.Main.isLinux;
+import static _1ms.McOverTor.Main.*;
 
 public class TorManager {
     private static Socket socket;
@@ -50,6 +55,7 @@ public class TorManager {
     public static String sPort = "9050";
     private static String cPort = "9051";
     private static final Logger logger = LogManager.getLogger("McOverTor/TorControl");
+    public static final String hash = "3480b027e2eeda0b6bfaf2f28bde7f3f7038ecf4de3c3862ee9536d1d8451537";
     private static TorConnect connScrn;
 
     public static volatile boolean failToStart = false;
@@ -65,7 +71,8 @@ public class TorManager {
     //Extract the files located in the plugin to the desired path.
     public static void extractTor(String input, String output) {
         Thread.ofVirtual().name("TorFileExtract").start(()-> { //Async so all the unpackings can run concurrently, and it won't slow down the client's starting.
-            try (BufferedInputStream in = new BufferedInputStream(Objects.requireNonNull(TorManager.class.getResourceAsStream(input))); BufferedOutputStream out = new BufferedOutputStream(Files.newOutputStream(confPath.resolve(output)))) {
+            try (BufferedInputStream in = new BufferedInputStream(Objects.requireNonNull(TorManager.class.getResourceAsStream(input)));
+                 BufferedOutputStream out = new BufferedOutputStream(Files.newOutputStream(confPath.resolve(output)))) {
                 in.transferTo(out);
             } catch (IOException e) {
                 logger.error("Couldn't extract tor");
@@ -84,7 +91,26 @@ public class TorManager {
                 throw new RuntimeException(e);
             }
         }
-        final ProcessBuilder pb = new ProcessBuilder(tor.toAbsolutePath().toString(), "-f", confPath+File.separator+"torrc", "--DataDirectory", confPath.toString(), "--SocksPort", sPort, "--ControlPort", cPort, "--HashedControlPassword", "16:5CC34EC2B16C1DA260CE40B1D139DA73AAFAFF5EA46E17D2E20191BA76");
+
+        final ProcessBuilder pb = new ProcessBuilder(tor.toAbsolutePath().toString(), "-f", confPath+File.separator+"torrc", "--DataDirectory", confPath.toString(),
+                "--SocksPort", sPort, "--ControlPort", cPort, "--HashedControlPassword", "16:5CC34EC2B16C1DA260CE40B1D139DA73AAFAFF5EA46E17D2E20191BA76");
+
+// Hash both concurrently
+        try {
+            var f1 = vExec.submit(() -> getHash(Objects.requireNonNull(TorManager.class.getResourceAsStream(isLinux ? "/tor/lnx/tor" : "/tor/tor"))));
+            var f2 = vExec.submit(() -> getHash(Files.newInputStream(confPath.resolve("tor"))));
+            String hash1 = f1.get(); //InJar
+            String hash2 = f2.get(); //The tor in use
+
+            if (!Objects.equals(hash1, hash) || !Objects.equals(hash2, hash)) {
+                logger.error("[McOverTor] Tor's integrity didn't match up, aborting.");
+                System.exit(0);
+            }
+        } catch (ExecutionException | InterruptedException e) {
+            logger.error("[McOverTor] Failed to get Tor's hash.");
+            throw new RuntimeException(e);
+        }
+
         if(isLinux)
             pb.environment().put("LD_LIBRARY_PATH", ":"+ tor.getParent());
         try {
@@ -268,5 +294,26 @@ public class TorManager {
             }
         } catch (IOException ignored) {}
         logger.warn("Failed to adjust Tor logging levels, potential crash might happen.");
+    }
+
+    private static final HexFormat hexFormat = HexFormat.of();
+
+    public static String getHash(InputStream inp) {
+        MessageDigest md;
+
+        byte[] buffer = new byte[256 * 1024]; // 256 KB
+        int bytesRead;
+
+        try (inp) {
+            md = MessageDigest.getInstance("SHA-256");
+
+            while ((bytesRead = inp.read(buffer)) != -1) {
+                md.update(buffer, 0, bytesRead);
+            }
+        } catch (IOException | NoSuchAlgorithmException e) {
+            logger.error("[McOverTor] Failed to calculate Tor's hash.");
+            throw new RuntimeException(e);
+        }
+        return hexFormat.formatHex(md.digest());
     }
 }
