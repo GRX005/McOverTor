@@ -28,18 +28,15 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static _1ms.McOverTor.Main.*;
-import static _1ms.McOverTor.manager.TorManager.getHash;
-import static _1ms.McOverTor.manager.TorManager.hash;
 
 public class SettingsMgr {
     private static final Path settConf = confPath.resolve("config.cfg");
     private static final Gson gson = new Gson();
-    private static HashMap<TorOption, Boolean> settings = new HashMap<>();
-    private final static String ver = "CONFIG_VERSION: 1.7";//+1 this when Tor is updated
+    private static ConcurrentHashMap<TorOption, Boolean> settings = new ConcurrentHashMap<>();
+    private final static String ver = "CONFIG_VERSION: 1.8";//+1 this when Tor is updated
 
     //Save cfg, and load def settings if needed.
     private static void saveConfig(boolean first) {
@@ -64,12 +61,11 @@ public class SettingsMgr {
                 throw new RuntimeException(e);
             }
             reConf();
-            AllTorExtract();
             return;
         }
         settings = loadConfig();
     }
-//Overloads bc why not
+    //Overloads bc why not
     public static void flip(TorOption val) {
         settings.replace(val, !settings.get(val));
     }
@@ -86,19 +82,17 @@ public class SettingsMgr {
     public static boolean get(String val) {
         return !settings.get(TorOption.valueOf(val.substring(1)));
     }
-//Load the mod's cfg, to upd the tor client used -> upd the cfg version
-    private static HashMap<TorOption, Boolean> loadConfig() {
+    //Load the mod's cfg, to upd the tor client used -> upd the cfg version
+    private static ConcurrentHashMap<TorOption, Boolean> loadConfig() {
         try (BufferedReader reader = Files.newBufferedReader(settConf)) {
-            if (!Objects.equals(getHash(Files.newInputStream(confPath.resolve("tor"))), hash))
-                AllTorExtract(); //Upd if the hash doesnt match.
-            if(!reader.readLine().equals(ver)) { // Skip the version line, and upd cfg if it doesnt match.
+            if(!reader.readLine().equals(ver)) { // Skip the version line
                 FileUtils.deleteDirectory(confPath.toFile());
                 Files.createDirectory(confPath);
                 reConf();
                 return settings;
             }
             logger.info("LOADING {}", ver);
-            return gson.fromJson(reader, new TypeToken<HashMap<TorOption, Boolean>>(){}.getType());
+            return gson.fromJson(reader, new TypeToken<ConcurrentHashMap<TorOption, Boolean>>(){}.getType());
         } catch (IOException e) {
             logger.error("Failed to load config.");
             throw new RuntimeException(e);
@@ -107,6 +101,7 @@ public class SettingsMgr {
 
     private static void reConf() {
         saveConfig(true);
+        AllTorExtract();
         logger.info("Updated config.");
     }
 }

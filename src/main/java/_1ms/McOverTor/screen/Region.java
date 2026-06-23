@@ -85,7 +85,7 @@ public class Region extends Screen {
 
     private void checkAndRelaunch() {
         if(TorManager.progress == 100) {
-            TorManager.exitTor(true);
+            TorManager.exitTorAsync(true);
             TorManager.startTor();
             return;
         }

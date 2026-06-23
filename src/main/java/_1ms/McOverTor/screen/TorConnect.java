@@ -73,9 +73,9 @@ public class TorConnect extends Screen {
 //After 5% we estabilish a control port conn with Tor so we can close it gracefully.
     private void cancelBtnFunc() {
         if(progress < 5)
-            TorManager.killTor(false, true);
+            TorManager.killTorAsync(false, true);
         else
-            TorManager.exitTor(true);
+            TorManager.exitTorAsync(true);
         onClose();
     }
 
@@ -117,10 +117,12 @@ public class TorConnect extends Screen {
         graphics.centeredText(this.font, Component.literal("Successfully connected to Tor!"), xhalf, yhalf - 60, 0xFF00FF00);
 
     }
-//When the conn reaches 100%, remove the cancelBtn and add close.
+//When the conn reaches 100%, remove the cancelBtn and add close. Run on MC thread since its called from a VT.
     public void connCallback() {
-        this.removeWidget(cancelBtn);
-        this.addRenderableWidget(closeBtn);
+        this.minecraft.execute(()-> {
+            this.removeWidget(cancelBtn);
+            this.addRenderableWidget(closeBtn);
+        });
     }
 
     private void renderProgressBar(GuiGraphicsExtractor graphics, int x, int y) {

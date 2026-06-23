@@ -58,7 +58,13 @@ abstract class MpButtonsAdd extends Screen {
     }
 //TODO The vanilla btns are over these ones.
     //TODO Try with their default height (20)
-    @Inject(method = "init()V", at = @At("HEAD"))
+    @Inject(
+            method = "init",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/client/gui/screens/multiplayer/JoinMultiplayerScreen;repositionElements()V"
+            )
+    )
     public void init(CallbackInfo ci) {
         newIpButton = Button.builder(Component.literal("Change IP"),_ -> this.minecraft.setScreenAndShow(new ChangeIP()))
                 .size(95,21).build();
@@ -94,7 +100,7 @@ abstract class MpButtonsAdd extends Screen {
         if (progress < 100) {
             TorManager.startTor();
         } else {
-            TorManager.exitTor(true);
+            TorManager.exitTorAsync(true);
             this.minecraft.setScreenAndShow(new JoinMultiplayerScreen(new TitleScreen()));
         }
     }

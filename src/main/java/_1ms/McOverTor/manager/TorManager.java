@@ -30,33 +30,27 @@ import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermissions;
-import java.security.DigestInputStream;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
-import java.util.HexFormat;
 import java.util.Objects;
 import java.util.Random;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
 
-import static _1ms.McOverTor.Main.*;
+import static _1ms.McOverTor.Main.confPath;
+import static _1ms.McOverTor.Main.isLinux;
 
 public class TorManager {
-    private static Socket socket;
-    private static PrintWriter out;
-    private static BufferedReader in;
-    private static Process torP;
-    private static Thread torStopThread;
+    private static volatile Socket socket;
+    private static volatile PrintWriter out;
+    private static volatile BufferedReader in;
+    private static volatile Process torP;
+    private static volatile Thread torStopThread;
     private static final Path tor = confPath.resolve("tor");
 
     public static volatile int progress = 0;
     public static volatile String message = "(starting): Starting";
-    public static String sPort = "9050";
-    private static String cPort = "9051";
+    public static volatile String sPort = "9050";
+    private static volatile String cPort = "9051";
     private static final Logger logger = LogManager.getLogger("McOverTor/TorControl");
-    public static final String hash = "3480b027e2eeda0b6bfaf2f28bde7f3f7038ecf4de3c3862ee9536d1d8451537";
-    private static TorConnect connScrn;
+    private static volatile TorConnect connScrn;
 
     public static volatile boolean failToStart = false;
     public static volatile boolean failToConn = false;
@@ -95,22 +89,6 @@ public class TorManager {
         final ProcessBuilder pb = new ProcessBuilder(tor.toAbsolutePath().toString(), "-f", confPath+File.separator+"torrc", "--DataDirectory", confPath.toString(),
                 "--SocksPort", sPort, "--ControlPort", cPort, "--HashedControlPassword", "16:5CC34EC2B16C1DA260CE40B1D139DA73AAFAFF5EA46E17D2E20191BA76");
 
-// Hash both concurrently
-        try {
-            var f1 = vExec.submit(() -> getHash(Objects.requireNonNull(TorManager.class.getResourceAsStream(isLinux ? "/tor/lnx/tor" : "/tor/tor"))));
-            var f2 = vExec.submit(() -> getHash(Files.newInputStream(confPath.resolve("tor"))));
-            String hash1 = f1.get(); //InJar
-            String hash2 = f2.get(); //The tor in use
-
-            if (!Objects.equals(hash1, hash) || !Objects.equals(hash2, hash)) {
-                logger.error("[McOverTor] Tor's integrity didn't match up, aborting.");
-                System.exit(0);
-            }
-        } catch (ExecutionException | InterruptedException e) {
-            logger.error("[McOverTor] Failed to get Tor's hash.");
-            throw new RuntimeException(e);
-        }
-
         if(isLinux)
             pb.environment().put("LD_LIBRARY_PATH", ":"+ tor.getParent());
         try {
@@ -130,6 +108,7 @@ public class TorManager {
             String line;
             boolean firstVer = true;
             while ((line = reader.readLine()) != null) {
+                System.out.println(line);
                 if (firstVer) {//Print Tor's version
                     var ver = line.split(" ");
                     logger.info("Starting {} {} {}", ver[4], ver[5], ver[6]);
@@ -157,9 +136,9 @@ public class TorManager {
                         continue;
                     }
                     if(progress == 100) { //Shut down reader after Tor is Loaded.
-                        logsAdjust();
+                        //logsAdjust();
                         connScrn.connCallback();
-                        break;
+                        //break;
                     }
                 }
             }
@@ -183,7 +162,7 @@ public class TorManager {
             while (true) {
                 try {
                     var currProg = progress;
-                    if (currProg==0 || currProg==100) //If cancel or done
+                    if (currProg==0 || currProg==100 || failToStart) //If cancel or done
                         break;
                     if (prevProg==currProg) {
                         counter++;
@@ -202,7 +181,7 @@ public class TorManager {
     }
 
     //Forcefully shut down the Tor client when needed.
-    public static void killTor(boolean relaunch, boolean linuxKill) {
+    private static void killTor(boolean relaunch, boolean linuxKill) {
         try {
             if(torStopThread != null) {
                 Runtime.getRuntime().removeShutdownHook(torStopThread); //Remove shutdown hook as the Tor client is stopped here.
@@ -229,7 +208,11 @@ public class TorManager {
         }
     }
 
-    //Connect to the Tor client control port.
+    public static void killTorAsync(boolean relaunch, boolean linuxKill) {
+        Thread.ofVirtual().name("TorKiller").start(()->killTor(relaunch,linuxKill));
+    }
+
+    //Connect to the Tor client control port. Only called from VT
     private static void authControl() {
         try {
             socket = new Socket("127.0.0.1", Integer.parseInt(cPort));
@@ -252,7 +235,7 @@ public class TorManager {
         torP.destroy();
     }
     //Properly close Tor.
-    public static void exitTor(boolean remHook) {
+    private static void exitTor(boolean remHook) {
         try {
             out.println("SIGNAL SHUTDOWN");
             final String resp = in.readLine();//If the Tor client freezes, this will make the game freeze too, but it shouldn't
@@ -269,6 +252,10 @@ public class TorManager {
         } catch (IOException ignored) {}
         logger.warn("[McOverTor] Failed to close Tor.");
         killTor(false, true);//Kill tor if it couldn't be closed.
+    }
+
+    public static void exitTorAsync(boolean remHook) {
+        Thread.ofVirtual().name("TorExiter").start(()->exitTor(remHook));
     }
     //Change circuits without restarting, using the control port.
     public static int changeCircuits() {
@@ -294,26 +281,5 @@ public class TorManager {
             }
         } catch (IOException ignored) {}
         logger.warn("Failed to adjust Tor logging levels, potential crash might happen.");
-    }
-
-    private static final HexFormat hexFormat = HexFormat.of();
-
-    public static String getHash(InputStream inp) {
-        MessageDigest md;
-
-        byte[] buffer = new byte[256 * 1024]; // 256 KB
-        int bytesRead;
-
-        try (inp) {
-            md = MessageDigest.getInstance("SHA-256");
-
-            while ((bytesRead = inp.read(buffer)) != -1) {
-                md.update(buffer, 0, bytesRead);
-            }
-        } catch (IOException | NoSuchAlgorithmException e) {
-            logger.error("[McOverTor] Failed to calculate Tor's hash.");
-            throw new RuntimeException(e);
-        }
-        return hexFormat.formatHex(md.digest());
     }
 }
