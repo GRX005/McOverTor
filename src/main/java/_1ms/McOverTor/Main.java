@@ -43,7 +43,7 @@ public class Main implements ModInitializer {
     public static final boolean isLinux = System.getProperty("os.name").toLowerCase().contains("linux");
     public static final Logger logger = LogManager.getLogger("McOverTor");//TODO Logger different in default fabric?
 
-    public static final ExecutorService vExec = Executors.newVirtualThreadPerTaskExecutor();
+    public static final ExecutorService vExec = Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("tor-worker-", 0).factory());
 
     public final static Component madeByText = Component.literal("Made by _1ms.");
     public final static URI githubUrl = URI.create("https://github.com/GRX005");

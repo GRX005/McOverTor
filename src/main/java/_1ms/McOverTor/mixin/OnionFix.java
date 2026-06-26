@@ -146,7 +146,6 @@ abstract class HandshakeFix {
             ordinal = 1)
     private static int restorePort(int port, @Local(argsOnly = true, ordinal = 0) String hostName) {
         if (TorManager.progress == 100 && SettingsMgr.get(TorOption.useTorDNS)) {
-            System.out.println(hostName);
             if (hostName.equals("127.0.0.1")) {
                 ServerAddress ip = get(port);
                 if (ip != null) return ip.getPort();

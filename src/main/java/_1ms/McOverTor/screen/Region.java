@@ -85,8 +85,7 @@ public class Region extends Screen {
 
     private void checkAndRelaunch() {
         if(TorManager.progress == 100) {
-            TorManager.exitTorAsync(true);
-            TorManager.startTor();
+            TorManager.exitTorAsync(true).thenAccept(_ -> Minecraft.getInstance().execute(TorManager::startTor));
             return;
         }
         closeFunc();

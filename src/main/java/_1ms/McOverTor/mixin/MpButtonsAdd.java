@@ -100,8 +100,9 @@ abstract class MpButtonsAdd extends Screen {
         if (progress < 100) {
             TorManager.startTor();
         } else {
-            TorManager.exitTorAsync(true);
-            this.minecraft.setScreenAndShow(new JoinMultiplayerScreen(new TitleScreen()));
+            TorManager.exitTorAsync(true)
+                    .thenAccept(_->this.minecraft
+                            .execute(()->this.minecraft.setScreenAndShow(new JoinMultiplayerScreen(new TitleScreen()))));
         }
     }
 

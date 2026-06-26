@@ -45,7 +45,6 @@ public class DnsMgr {
 
     public static int register(ServerAddress real) {
         // Use compute() to lock the specific ServerAddress key and perform the check-then-act logic atomically.
-        System.out.println("P: "+PENDING.asMap());
         return REVERSE.compute(real, (addressKey, existingPort) -> {
             // Check if we already have a valid port in both maps
             if (existingPort != null && PENDING.getIfPresent(existingPort) != null) {

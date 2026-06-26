@@ -33,9 +33,9 @@ import java.nio.file.attribute.PosixFilePermissions;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.Random;
+import java.util.concurrent.CompletableFuture;
 
-import static _1ms.McOverTor.Main.confPath;
-import static _1ms.McOverTor.Main.isLinux;
+import static _1ms.McOverTor.Main.*;
 
 public class TorManager {
     private static volatile Socket socket;
@@ -108,7 +108,7 @@ public class TorManager {
             String line;
             boolean firstVer = true;
             while ((line = reader.readLine()) != null) {
-                System.out.println(line);
+                //System.out.println(line);
                 if (firstVer) {//Print Tor's version
                     var ver = line.split(" ");
                     logger.info("Starting {} {} {}", ver[4], ver[5], ver[6]);
@@ -136,9 +136,9 @@ public class TorManager {
                         continue;
                     }
                     if(progress == 100) { //Shut down reader after Tor is Loaded.
-                        //logsAdjust();
+                        logsAdjust();
                         connScrn.connCallback();
-                        //break;
+                        break;
                     }
                 }
             }
@@ -194,7 +194,7 @@ public class TorManager {
                     final Random rand = new Random();
                     sPort = String.valueOf(rand.nextInt(61001,65535));
                     do cPort = String.valueOf(rand.nextInt(61001,65535)); while (Objects.equals(cPort, sPort)); //Gen and check if we somehow gened the same num.
-                    logger.info("[McOverTor] Default ports already occupied, switching to Socks: {}, Control: {}", sPort,cPort);
+                    logger.info("Default ports already occupied, switching to Socks: {}, Control: {}", sPort,cPort);
                 }
             else
                 new ProcessBuilder("taskkill", "/F", "/IM", "tor").start().waitFor();
@@ -202,14 +202,14 @@ public class TorManager {
                 launchTor();
             else
                 resetProg();
-            logger.info("[McOverTor] Killed already running Tor.");
+            logger.info("Killed already running Tor.");
         } catch (InterruptedException | IOException ignored) {
             failToStart = true;
         }
     }
 
-    public static void killTorAsync(boolean relaunch, boolean linuxKill) {
-        Thread.ofVirtual().name("TorKiller").start(()->killTor(relaunch,linuxKill));
+    public static CompletableFuture<Void> killTorAsync(boolean relaunch, boolean linuxKill) {
+        return CompletableFuture.runAsync(()->killTor(relaunch,linuxKill), vExec);
     }
 
     //Connect to the Tor client control port. Only called from VT
@@ -246,16 +246,16 @@ public class TorManager {
                     Runtime.getRuntime().removeShutdownHook(torStopThread);
                     torStopThread = null;
                 }
-                logger.info("[McOverTor] Tor has been closed.");
+                logger.info("Tor has been closed.");
                 return;
             }
         } catch (IOException ignored) {}
-        logger.warn("[McOverTor] Failed to close Tor.");
+        logger.warn("Failed to close Tor.");
         killTor(false, true);//Kill tor if it couldn't be closed.
     }
 
-    public static void exitTorAsync(boolean remHook) {
-        Thread.ofVirtual().name("TorExiter").start(()->exitTor(remHook));
+    public static CompletableFuture<Void> exitTorAsync(boolean remHook) {
+        return CompletableFuture.runAsync(()->exitTor(remHook), vExec);
     }
     //Change circuits without restarting, using the control port.
     public static int changeCircuits() {

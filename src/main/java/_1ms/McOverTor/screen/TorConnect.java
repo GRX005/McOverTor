@@ -73,10 +73,9 @@ public class TorConnect extends Screen {
 //After 5% we estabilish a control port conn with Tor so we can close it gracefully.
     private void cancelBtnFunc() {
         if(progress < 5)
-            TorManager.killTorAsync(false, true);
+            TorManager.killTorAsync(false, true).thenAccept(_->this.minecraft.execute(this::onClose));
         else
-            TorManager.exitTorAsync(true);
-        onClose();
+            TorManager.exitTorAsync(true).thenAccept(_->this.minecraft.execute(this::onClose));
     }
 
     @Override
