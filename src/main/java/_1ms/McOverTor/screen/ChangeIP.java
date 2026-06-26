@@ -34,7 +34,7 @@ import org.jspecify.annotations.NonNull;
 import static _1ms.McOverTor.Main.*;
 
 public class ChangeIP extends Screen {
-    private int status = 0;
+    private volatile int status = 0;
 
     public ChangeIP() {
         super(Component.literal("Change IP"));
@@ -43,6 +43,9 @@ public class ChangeIP extends Screen {
     @Override
     protected void init() {
         super.init();
+
+        if (status==0)
+            TorManager.changeCircuits().thenAccept(i->status=i);
 
         this.addRenderableWidget(Button.builder(Component.literal("Okay"), _ -> onClose())
                 .bounds(this.width / 2 - 60, this.height / 2 + 30, 120, 20)
@@ -69,12 +72,9 @@ public class ChangeIP extends Screen {
         graphics.text(this.font,verText,2, this.height-10, 0xFFFFFFFF);
 
         switch (status) {
-            case 0-> { //Will be 0 at first
-                graphics.centeredText(this.font, "Changing IP...", centerX, centerY, 0xFFFFFFFF);
-                this.status = TorManager.changeCircuits();//TODO ASYNC
-            }
-            case 1-> graphics.centeredText(this.font, "You've successfully changed IP.", centerX, centerY, 0xFF00FF00);
-            case 2-> graphics.centeredText(this.font, "Failed to change IP!", centerX, centerY, 0xFFFF0000);
+            case 0 -> graphics.centeredText(this.font, "Changing IP...", centerX, centerY, 0xFFFFFFFF); //Will be 0 at first
+            case 1 -> graphics.centeredText(this.font, "You've successfully changed IP.", centerX, centerY, 0xFF00FF00);
+            case 2 -> graphics.centeredText(this.font, "Failed to change IP!", centerX, centerY, 0xFFFF0000);
         }
     }
 }

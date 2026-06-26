@@ -258,17 +258,19 @@ public class TorManager {
         return CompletableFuture.runAsync(()->exitTor(remHook), vExec);
     }
     //Change circuits without restarting, using the control port.
-    public static int changeCircuits() {
-        try {
-            out.println("SIGNAL NEWNYM");
-            final String resp = in.readLine();
-            if (resp.contains("250")) {
-                logger.info("[McOverTor] Circuits changed.");
-                return 1;
-            }
-        } catch (IOException ignored) {}
-        logger.warn("[McOverTor] Failed to change circuits.");
-        return 2;
+    public static CompletableFuture<Integer> changeCircuits() {
+        return CompletableFuture.supplyAsync(()->{
+            try {
+                out.println("SIGNAL NEWNYM");
+                final String resp = in.readLine();
+                if (resp.contains("250")) {
+                    logger.info("Circuits changed.");
+                    return 1;
+                }
+            } catch (IOException ignored) {}
+            logger.warn("Failed to change circuits.");
+            return 2;
+        }, vExec);
     }
     //Only log errors, otherwise the stdout buffer fills up, it shouldn't throw errors :)
     private static void logsAdjust() {
