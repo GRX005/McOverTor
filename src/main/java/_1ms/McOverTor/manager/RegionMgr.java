@@ -27,11 +27,13 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import static _1ms.McOverTor.Main.confPath;
+import static _1ms.McOverTor.Main.vExec;
 
 public class RegionMgr {
     public record TorRegionInfo(String code, String name) {}
@@ -67,6 +69,19 @@ public class RegionMgr {
             logger.error("Failed to get selected countries");
             throw new RuntimeException(e);
         }
+    }
+
+    public static CompletableFuture<Boolean> hasSelectedCountries() {
+        return CompletableFuture.supplyAsync(()->{
+            try {
+                String ln = Files.readString(torrc);
+                return ln.contains("ExitNodes");
+
+            } catch (IOException e) {
+                logger.error("Failed to check for selected countries");
+                throw new RuntimeException(e);
+            }
+        },vExec);
     }
 //Apply the modifed regions as needed to the torrc file.
     public static void modRegions(Set<String> regs) {

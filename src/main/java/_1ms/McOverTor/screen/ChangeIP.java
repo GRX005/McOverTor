@@ -38,14 +38,12 @@ public class ChangeIP extends Screen {
 
     public ChangeIP() {
         super(Component.literal("Change IP"));
+        TorManager.changeCircuits().thenAccept(i->status=i);
     }
 
     @Override
     protected void init() {
         super.init();
-
-        if (status==0)
-            TorManager.changeCircuits().thenAccept(i->status=i);
 
         this.addRenderableWidget(Button.builder(Component.literal("Okay"), _ -> onClose())
                 .bounds(this.width / 2 - 60, this.height / 2 + 30, 120, 20)

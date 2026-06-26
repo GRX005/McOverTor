@@ -20,7 +20,9 @@
 
 package _1ms.McOverTor.screen;
 
+import _1ms.McOverTor.manager.RegionMgr;
 import _1ms.McOverTor.manager.TorManager;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.PlainTextButton;
@@ -78,6 +80,7 @@ public class TorConnect extends Screen {
             TorManager.exitTorAsync(true).thenAccept(_->this.minecraft.execute(this::onClose));
     }
 
+    private String text = "Tor might be failing to connect";
     @Override
     public void extractRenderState(@NonNull GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
 
@@ -103,8 +106,11 @@ public class TorConnect extends Screen {
             cancelBtn.extractRenderState(graphics, mouseX, mouseY, a);
             return;
         }
-        if (failToConn)
-            graphics.centeredText(this.font, Component.literal("Tor might be failing to connect because of your internet or country selections."), xhalf, y + barHeight +5, 0xFFFF0000);
+        if (failToConn) {
+            if (text.length()==31)
+                RegionMgr.hasSelectedCountries().thenAcceptAsync(b->text= text + (b?" because of your selected countries.":" because of your internet."), this.minecraft);
+            graphics.centeredText(this.font, Component.literal(text), xhalf, y + barHeight + 5, 0xFFFF0000);
+        }
 
 //Otherwise the tor status msgs.
         graphics.centeredText(this.font, Component.literal(TorManager.message), xhalf, y + barHeight - 10, 0xA0FFFFFF);
