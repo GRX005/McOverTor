@@ -84,53 +84,57 @@ public class RegionMgr {
         },vExec);
     }
 //Apply the modifed regions as needed to the torrc file.
-    public static void modRegions(Set<String> regs) {
-        try {
-            List<String> lines = Files.readAllLines(torrc);
-            final String lastLn = lines.getLast();
-            if(regs.isEmpty()) { //IF none are selected, delete
-                lines.remove(lastLn);
-                if(lines.getLast().startsWith("MiddleNodes"))
-                    for(int i=0; i<2; i++)
-                        lines.remove(lines.getLast());
-            } else {
-                StringBuilder toSave = new StringBuilder();
-                regs.forEach(e-> toSave.append("{").append(e).append("},"));
-                if (lastLn.startsWith("ExitNodes")) { //IF it was already there we need to delete the previous.
-                    lines.remove(lastLn); //We have a new last here.
+    public static CompletableFuture<Void> modRegions(Set<String> regs) {
+        return CompletableFuture.runAsync(()->{
+            try {
+                List<String> lines = Files.readAllLines(torrc);
+                final String lastLn = lines.getLast();
+                if(regs.isEmpty()) { //IF none are selected, delete
+                    lines.remove(lastLn);
                     if(lines.getLast().startsWith("MiddleNodes"))
                         for(int i=0; i<2; i++)
                             lines.remove(lines.getLast());
+                } else {
+                    StringBuilder toSave = new StringBuilder();
+                    regs.forEach(e-> toSave.append("{").append(e).append("},"));
+                    if (lastLn.startsWith("ExitNodes")) { //IF it was already there we need to delete the previous.
+                        lines.remove(lastLn); //We have a new last here.
+                        if(lines.getLast().startsWith("MiddleNodes"))
+                            for(int i=0; i<2; i++)
+                                lines.remove(lines.getLast());
+                    }
+                    if(SettingsMgr.get(TorOption.allNodes)) {//Also entry and middle if we want it to apply to all nodes.
+                        lines.add("EntryNodes "+ toSave);
+                        lines.add("MiddleNodes "+ toSave);
+                    }
+                    lines.add("ExitNodes "+ toSave);
                 }
-                if(SettingsMgr.get(TorOption.allNodes)) {//Also entry and middle if we want it to apply to all nodes.
-                    lines.add("EntryNodes "+ toSave);
-                    lines.add("MiddleNodes "+ toSave);
-                }
-                lines.add("ExitNodes "+ toSave);
+                Files.write(torrc, lines);
+            } catch (IOException e) {
+                logger.error("Failed to apply country modifications");
+                throw new RuntimeException(e);
             }
-            Files.write(torrc, lines);
-        } catch (IOException e) {
-            logger.error("Failed to apply country modifications");
-            throw new RuntimeException(e);
-        }
+        }, vExec);
     }
 //If only the TorOption.allNodes option changed, not the selection of countries
-    public static void remOrAdd(boolean add) {
-        try {
-            List<String> lines = Files.readAllLines(torrc);
-            if(!add) {
-                for(int i=0; i<2; i++)
-                    lines.remove(lines.size()-2);
-            } else {
-                final String toAdd = lines.getLast().substring(10);
-                lines.add(lines.size()-1,"EntryNodes "+toAdd);
-                lines.add(lines.size()-1,"MiddleNodes "+toAdd);
+    public static CompletableFuture<Void> remOrAdd(boolean add) {
+        return CompletableFuture.runAsync(()->{
+            try {
+                List<String> lines = Files.readAllLines(torrc);
+                if(!add) {
+                    for(int i=0; i<2; i++)
+                        lines.remove(lines.size()-2);
+                } else {
+                    final String toAdd = lines.getLast().substring(10);
+                    lines.add(lines.size()-1,"EntryNodes "+toAdd);
+                    lines.add(lines.size()-1,"MiddleNodes "+toAdd);
+                }
+                Files.write(torrc, lines);
+            } catch (IOException e) {
+                logger.error("Failed to change single/multi nodes application.");
+                throw new RuntimeException(e);
             }
-            Files.write(torrc, lines);
-        } catch (IOException e) {
-            logger.error("Failed to change single/multi nodes application.");
-            throw new RuntimeException(e);
-        }
+        }, vExec);
     }
 
 }

@@ -85,14 +85,12 @@ public class Region extends Screen {
 //Switch between multi or single node application, and/or apply the change of countries
     private void closeBtnF() {
         if(!usedR.equals(snapshot)) {//If the selected countries changed
-            RegionMgr.modRegions(usedR);
-            checkAndRelaunch();
+            RegionMgr.modRegions(usedR).thenAcceptAsync(_->checkAndRelaunch(),this.minecraft);
             return;
         }
         //Re-Start Tor if already started so that the settings will apply, otherwise close.
         if (blSnap != get(TorOption.allNodes) && !usedR.isEmpty()) { //If the state of the tick changed
-            RegionMgr.remOrAdd(get(TorOption.allNodes));
-            checkAndRelaunch();
+            RegionMgr.remOrAdd(get(TorOption.allNodes)).thenAcceptAsync(_->checkAndRelaunch(), this.minecraft);
             return;
         }
          closeFunc();
@@ -100,7 +98,7 @@ public class Region extends Screen {
 
     private void checkAndRelaunch() {
         if(TorManager.progress == 100) {
-            TorManager.exitTorAsync(true).thenAccept(_ -> Minecraft.getInstance().execute(TorManager::startTor));
+            TorManager.exitTorAsync(true).thenAcceptAsync(_ ->TorManager.startTor(), this.minecraft);
             return;
         }
         closeFunc();

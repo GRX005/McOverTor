@@ -22,7 +22,6 @@ package _1ms.McOverTor.screen;
 
 import _1ms.McOverTor.manager.RegionMgr;
 import _1ms.McOverTor.manager.TorManager;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.PlainTextButton;
@@ -75,9 +74,9 @@ public class TorConnect extends Screen {
 //After 5% we estabilish a control port conn with Tor so we can close it gracefully.
     private void cancelBtnFunc() {
         if(progress < 5)
-            TorManager.killTorAsync(false, true).thenAccept(_->this.minecraft.execute(this::onClose));
+            TorManager.killTorAsync(false, true).thenAcceptAsync(_->onClose(), this.minecraft);
         else
-            TorManager.exitTorAsync(true).thenAccept(_->this.minecraft.execute(this::onClose));
+            TorManager.exitTorAsync(true).thenAcceptAsync(_->onClose(), this.minecraft);
     }
 
     private String text = "Tor might be failing to connect";
