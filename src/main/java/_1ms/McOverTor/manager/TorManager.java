@@ -120,7 +120,7 @@ public class TorManager {
                     break;
                 }
                 if(line.contains("Failed")) {
-                    message = "§4"+line.substring(29);
+                    message = "§c"+line.substring(29);
                     logger.info("Error: {}", message);
                     break;
                 }
