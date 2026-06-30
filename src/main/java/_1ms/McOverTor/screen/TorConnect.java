@@ -97,28 +97,29 @@ public class TorConnect extends Screen {
         graphics.text(this.font, verText,2, this.height-10, 0xFFFFFFFF);
 
         renderProgressBar(graphics, x, y-20);
-        graphics.centeredText(this.font, Component.literal(progress + "%"), xhalf, y-14, 0xFFFFFFFF); //Progress in %
+        graphics.centeredText(this.font, progress + "%", xhalf, y-14, 0xFFFFFFFF); //Progress in %
 //Render the fail msg and ret if the conn failed.
         if(failToStart) {
-            graphics.centeredText(this.font, Component.literal("Failed to launch Tor, check logs."), xhalf, y + barHeight - 10, 0xFFFF0000);
-            graphics.centeredText(this.font, Component.literal("Error occurred!"), xhalf, yhalf - 60, 0xFFFF5555);
+            graphics.centeredText(this.font, "Failed to launch Tor, check logs.", xhalf, y + barHeight - 10, 0xFFFF0000);
+            graphics.centeredText(this.font, "Error occurred!", xhalf, yhalf - 60, 0xFFFF5555);
             cancelBtn.extractRenderState(graphics, mouseX, mouseY, a);
             return;
         }
         if (failToConn) {
             if (text.length()==31)
                 RegionMgr.hasSelectedCountries().thenAcceptAsync(b->text= text + (b?" because of your selected countries.":" because of your internet."), this.minecraft);
-            graphics.centeredText(this.font, Component.literal(text), xhalf, y + barHeight + 5, 0xFFFF0000);
+            graphics.centeredText(this.font, text, xhalf, y + barHeight + 5, 0xFFFF0000);
         }
 
 //Otherwise the tor status msgs.
-        graphics.centeredText(this.font, Component.literal(TorManager.message), xhalf, y + barHeight - 10, 0xA0FFFFFF);
+        var color = message.contains("Failed") ? 0xFFFF5555 : 0xA0FFFFFF;
+        graphics.centeredText(this.font, message, xhalf, y + barHeight - 10, color);
 
         if (progress < 100) {
-            graphics.centeredText(this.font, Component.literal("Connecting to Tor..."), xhalf, yhalf - 60, 0xFFFFFFFF);
+            graphics.centeredText(this.font, "Connecting to Tor...", xhalf, yhalf - 60, 0xFFFFFFFF);
             return;
         }
-        graphics.centeredText(this.font, Component.literal("Successfully connected to Tor!"), xhalf, yhalf - 60, 0xFF00FF00);
+        graphics.centeredText(this.font, "Successfully connected to Tor!", xhalf, yhalf - 60, 0xFF00FF00);
 
     }
 //When the conn reaches 100%, remove the cancelBtn and add close. Run on MC thread since its called from a VT.

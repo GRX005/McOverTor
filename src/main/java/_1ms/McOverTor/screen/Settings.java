@@ -78,7 +78,7 @@ public class Settings extends Screen { //Non-changing parts of the buttons in th
 
         graphics.text(this.font, verText,2, this.height-10, 0xFFFFFFFF);
 
-        graphics.centeredText(this.minecraft.font, Component.literal("Tor Buttons position:"), (this.width - 200) / 2+100, this.height / 2 -100, 0xFFFFFFFF);
+        graphics.centeredText(this.minecraft.font, "Tor Buttons position:", (this.width - 200) / 2+100, this.height / 2 -100, 0xFFFFFFFF);
 
 //Line between the vertical and horizontal pos settings.
         graphics.verticalLine(this.width/2, this.height/2-50, this.height/2-90, 0xFFFFFFFF);
