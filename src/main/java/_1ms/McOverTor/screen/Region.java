@@ -50,8 +50,6 @@ import java.util.concurrent.CompletableFuture;
 import static _1ms.McOverTor.Main.*;
 import static _1ms.McOverTor.manager.SettingsMgr.get;
 
-// TODO(Ravel): ambiguous static import, members with name TorRegionInfo have different new names
-//
 
 public class Region extends Screen {
     private List<TorRegionInfo> regions;
@@ -103,7 +101,7 @@ public class Region extends Screen {
         }
         closeFunc();
     }
-//TODO TEST OptionsSubScreen?, open from mod
+
     @Override
     protected void init() {
         super.init();

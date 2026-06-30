@@ -56,8 +56,6 @@ abstract class MpButtonsAdd extends Screen {
     protected MpButtonsAdd(Component title) {
         super(title);
     }
-//TODO The vanilla btns are over these ones.
-    //TODO Try with their default height (20)
     @Inject(
             method = "init",
             at = @At(
