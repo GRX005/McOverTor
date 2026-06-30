@@ -106,11 +106,9 @@ abstract class NettyNoDNS {
     @Inject(method = "connect(Ljava/net/InetAddress;I)Lio/netty/channel/ChannelFuture;", at = @At("HEAD"), cancellable = true)
     public void connect(InetAddress inetHost, int inetPort, CallbackInfoReturnable<ChannelFuture> cir) {
         if(progress == 100 && SettingsMgr.get(TorOption.useTorDNS)) {
-            if (inetHost.getHostAddress().equals("127.0.0.1")) {
-                ServerAddress ip = get(inetPort);
-                if (ip != null)
-                    cir.setReturnValue(this.connect(InetSocketAddress.createUnresolved(ip.getHost(), ip.getPort())));
-            }
+            ServerAddress ip = get(inetPort);
+            if(ip != null)
+                cir.setReturnValue(this.connect(InetSocketAddress.createUnresolved(ip.getHost(), ip.getPort())));
         }
     }
 }
@@ -121,7 +119,7 @@ abstract class NettyNoDNS {
 
 @Mixin(ClientIntentionPacket.class)
 abstract class HandshakeFix {
-//Since its a record we cant use the variable name, we have to use the ordinal otherwise it wont work.
+    //Since its a record we cant use the variable name, we have to use the ordinal otherwise it wont work.
     // 1. Fix Hostname
     @ModifyVariable(
             method = "<init>(ILjava/lang/String;ILnet/minecraft/network/protocol/handshake/ClientIntent;)V",
@@ -130,10 +128,8 @@ abstract class HandshakeFix {
             ordinal = 0)
     private static String restoreHostname(String hostName, @Local(argsOnly = true, ordinal = 1) int port) {
         if (TorManager.progress == 100 && SettingsMgr.get(TorOption.useTorDNS)) {
-            if (hostName.equals("127.0.0.1")) {
-                ServerAddress ip = get(port);
-                if (ip != null) return ip.getHost();
-            }
+            ServerAddress ip = get(port);
+            if (ip != null) return ip.getHost();
         }
         return hostName;
     }
@@ -144,12 +140,10 @@ abstract class HandshakeFix {
             at = @At("HEAD"),
             argsOnly = true,
             ordinal = 1)
-    private static int restorePort(int port, @Local(argsOnly = true, ordinal = 0) String hostName) {
+    private static int restorePort(int port) {
         if (TorManager.progress == 100 && SettingsMgr.get(TorOption.useTorDNS)) {
-            if (hostName.equals("127.0.0.1")) {
-                ServerAddress ip = get(port);
-                if (ip != null) return ip.getPort();
-            }
+            ServerAddress ip = get(port);
+            if (ip != null) return ip.getPort();
         }
         return port;
     }
