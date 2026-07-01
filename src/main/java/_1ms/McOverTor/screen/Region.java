@@ -43,41 +43,52 @@ import org.jspecify.annotations.NullMarked;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 
 import static _1ms.McOverTor.Main.*;
 import static _1ms.McOverTor.manager.SettingsMgr.get;
 
-// TODO(Ravel): ambiguous static import, members with name TorRegionInfo have different new names
-//
 
 public class Region extends Screen {
-    private final List<TorRegionInfo> regions = RegionMgr.getCtr();
-    private final Set<String> usedR = RegionMgr.getSelCtr();
+    private List<TorRegionInfo> regions;
+    private Set<String> usedR;
     private TorRegionList regList;
-    private final Set<String> snapshot;
+    private Set<String> snapshot;
     private final boolean blSnap;
+
+    private boolean isLoading=true;
 
     public Region() {//Take a snapshot of the options, so when the menu is closed we can see what changed.
         super(Component.literal("Tor Region Selector"));
-        snapshot = new HashSet<>(usedR);
         blSnap = get(TorOption.allNodes);
+
+        CompletableFuture.supplyAsync(() -> {
+            var r = RegionMgr.getCtr();
+            var used = RegionMgr.getSelCtr();
+            return Map.entry(r, used); // or a small record
+        }, vExec).thenAcceptAsync(entry -> {
+            regions  = entry.getKey();
+            usedR    = entry.getValue();
+            snapshot = new HashSet<>(usedR);
+            isLoading = false;
+            this.rebuildWidgets();
+        }, Minecraft.getInstance()); //Use static accessor as it might not be assigned here yet with this.minecraft
     }
 
     private void closeFunc() {
-        this.minecraft.setScreen(new JoinMultiplayerScreen(new TitleScreen()));
+        this.minecraft.setScreenAndShow(new JoinMultiplayerScreen(new TitleScreen()));
     }
 //Switch between multi or single node application, and/or apply the change of countries
     private void closeBtnF() {
         if(!usedR.equals(snapshot)) {//If the selected countries changed
-            RegionMgr.modRegions(usedR);
-            checkAndRelaunch();
+            RegionMgr.modRegions(usedR).thenAcceptAsync(_->checkAndRelaunch(),this.minecraft);
             return;
         }
         //Re-Start Tor if already started so that the settings will apply, otherwise close.
         if (blSnap != get(TorOption.allNodes) && !usedR.isEmpty()) { //If the state of the tick changed
-            RegionMgr.remOrAdd(get(TorOption.allNodes));
-            checkAndRelaunch();
+            RegionMgr.remOrAdd(get(TorOption.allNodes)).thenAcceptAsync(_->checkAndRelaunch(), this.minecraft);
             return;
         }
          closeFunc();
@@ -85,17 +96,17 @@ public class Region extends Screen {
 
     private void checkAndRelaunch() {
         if(TorManager.progress == 100) {
-            TorManager.exitTor(true);
-            TorManager.startTor();
+            TorManager.exitTorAsync(true).thenAcceptAsync(_ ->TorManager.startTor(), this.minecraft);
             return;
         }
         closeFunc();
     }
-//TODO TEST OptionsSubScreen?, open from mod
+
     @Override
     protected void init() {
         super.init();
-     //TODO ASYNC? measure time.
+        if (isLoading)
+            return;
         if(regList==null) {//Create the list UI and add the regions' names.
             regList = new TorRegionList(this.minecraft,0,0,0,20);
             regions.forEach(regList::addItem);
@@ -129,6 +140,11 @@ public class Region extends Screen {
         super.extractRenderState(graphics, mouseX,  mouseY, a);
 
         graphics.text(this.font, verText,2, this.height-10, 0xFFFFFFFF);
+
+        if (isLoading) {
+            graphics.centeredText(this.font, "Loading regions...", this.width / 2, this.height / 2, 0xFFFFFFFF);
+            return;
+        }
 
         if(usedR.isEmpty())
             graphics.centeredText(this.font, "none selected -> Tor decides",this.width/2 ,this.height/2-190, 0xFFFFFFFF);

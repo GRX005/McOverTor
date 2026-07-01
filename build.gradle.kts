@@ -20,8 +20,8 @@ dependencies {
 
     implementation("net.fabricmc:fabric-loader:${providers.gradleProperty("loader_version").get()}")
 
-    include(implementation("io.netty:netty-handler-proxy:4.2.12.Final")!!)
-    include(implementation("io.netty:netty-codec-socks:4.2.12.Final")!!)
+    include(implementation("io.netty:netty-handler-proxy:4.2.15.Final")!!)
+    include(implementation("io.netty:netty-codec-socks:4.2.15.Final")!!)
 
     include(implementation(fabricApi.module("fabric-resource-loader-v1", fabVer))!!)
     include(implementation(fabricApi.module("fabric-api-base", fabVer))!!)

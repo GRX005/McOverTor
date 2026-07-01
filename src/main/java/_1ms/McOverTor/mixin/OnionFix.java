@@ -119,7 +119,7 @@ abstract class NettyNoDNS {
 
 @Mixin(ClientIntentionPacket.class)
 abstract class HandshakeFix {
-//Since its a record we cant use the variable name, we have to use the ordinal otherwise it wont work.
+    //Since its a record we cant use the variable name, we have to use the ordinal otherwise it wont work.
     // 1. Fix Hostname
     @ModifyVariable(
             method = "<init>(ILjava/lang/String;ILnet/minecraft/network/protocol/handshake/ClientIntent;)V",

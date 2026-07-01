@@ -20,6 +20,7 @@
 
 package _1ms.McOverTor.screen;
 
+import _1ms.McOverTor.manager.RegionMgr;
 import _1ms.McOverTor.manager.TorManager;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
@@ -68,17 +69,17 @@ public class TorConnect extends Screen {
 
     @Override
     public void onClose() {
-        this.minecraft.setScreen(new JoinMultiplayerScreen(new TitleScreen()));
+        this.minecraft.setScreenAndShow(new JoinMultiplayerScreen(new TitleScreen()));
     }
 //After 5% we estabilish a control port conn with Tor so we can close it gracefully.
     private void cancelBtnFunc() {
         if(progress < 5)
-            TorManager.killTor(false, true);
+            TorManager.killTorAsync(false, true).thenAcceptAsync(_->onClose(), this.minecraft);
         else
-            TorManager.exitTor(true);
-        onClose();
+            TorManager.exitTorAsync(true).thenAcceptAsync(_->onClose(), this.minecraft);
     }
 
+    private String text = "Tor might be failing to connect";
     @Override
     public void extractRenderState(@NonNull GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
 
@@ -96,31 +97,37 @@ public class TorConnect extends Screen {
         graphics.text(this.font, verText,2, this.height-10, 0xFFFFFFFF);
 
         renderProgressBar(graphics, x, y-20);
-        graphics.centeredText(this.font, Component.literal(progress + "%"), xhalf, y-14, 0xFFFFFFFF); //Progress in %
+        graphics.centeredText(this.font, progress + "%", xhalf, y-14, 0xFFFFFFFF); //Progress in %
 //Render the fail msg and ret if the conn failed.
         if(failToStart) {
-            graphics.centeredText(this.font, Component.literal("Failed to launch Tor, check logs."), xhalf, y + barHeight - 10, 0xFFFF0000);
-            graphics.centeredText(this.font, Component.literal("Error occurred!"), xhalf, yhalf - 60, 0xFFFF5555);
+            graphics.centeredText(this.font, "Failed to launch Tor, check logs.", xhalf, y + barHeight - 10, 0xFFFF0000);
+            graphics.centeredText(this.font, "Error occurred!", xhalf, yhalf - 60, 0xFFFF5555);
             cancelBtn.extractRenderState(graphics, mouseX, mouseY, a);
             return;
         }
-        if (failToConn)
-            graphics.centeredText(this.font, Component.literal("Tor might be failing to connect because of your internet or country selections."), xhalf, y + barHeight +5, 0xFFFF0000);
+        if (failToConn) {
+            if (text.length()==31)
+                RegionMgr.hasSelectedCountries().thenAcceptAsync(b->text= text + (b?" because of your selected countries.":" because of your internet."), this.minecraft);
+            graphics.centeredText(this.font, text, xhalf, y + barHeight + 5, 0xFFFF0000);
+        }
 
 //Otherwise the tor status msgs.
-        graphics.centeredText(this.font, Component.literal(TorManager.message), xhalf, y + barHeight - 10, 0xA0FFFFFF);
+        var color = message.contains("Failed") ? 0xFFFF5555 : 0xA0FFFFFF;
+        graphics.centeredText(this.font, message, xhalf, y + barHeight - 10, color);
 
         if (progress < 100) {
-            graphics.centeredText(this.font, Component.literal("Connecting to Tor..."), xhalf, yhalf - 60, 0xFFFFFFFF);
+            graphics.centeredText(this.font, "Connecting to Tor...", xhalf, yhalf - 60, 0xFFFFFFFF);
             return;
         }
-        graphics.centeredText(this.font, Component.literal("Successfully connected to Tor!"), xhalf, yhalf - 60, 0xFF00FF00);
+        graphics.centeredText(this.font, "Successfully connected to Tor!", xhalf, yhalf - 60, 0xFF00FF00);
 
     }
-//When the conn reaches 100%, remove the cancelBtn and add close.
+//When the conn reaches 100%, remove the cancelBtn and add close. Run on MC thread since its called from a VT.
     public void connCallback() {
-        this.removeWidget(cancelBtn);
-        this.addRenderableWidget(closeBtn);
+        this.minecraft.execute(()-> {
+            this.removeWidget(cancelBtn);
+            this.addRenderableWidget(closeBtn);
+        });
     }
 
     private void renderProgressBar(GuiGraphicsExtractor graphics, int x, int y) {

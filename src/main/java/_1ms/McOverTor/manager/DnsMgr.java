@@ -25,9 +25,9 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.RemovalNotification;
 import net.minecraft.client.multiplayer.resolver.ServerAddress;
 
+import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 //We store the srv addresses needed for bypassing mc's dns resolution and using Tor's like this.
@@ -36,7 +36,7 @@ public class DnsMgr {
 
     private static final ConcurrentHashMap<ServerAddress, Integer> REVERSE = new ConcurrentHashMap<>();
     private static final Cache<Integer, ServerAddress> PENDING = CacheBuilder.newBuilder()
-            .expireAfterAccess(10, TimeUnit.MINUTES)
+            .expireAfterAccess(Duration.ofMinutes(10))
             .removalListener((RemovalNotification<Integer, ServerAddress> n) ->
                     REVERSE.remove(Objects.requireNonNull(n.getValue())))
             .build();
@@ -44,17 +44,18 @@ public class DnsMgr {
     private static final AtomicInteger PORT_COUNTER = new AtomicInteger(10000);
 
     public static int register(ServerAddress real) {
-        Integer existing = REVERSE.get(real);
-//        System.out.println("P: "+PENDING.asMap());
-//        System.out.println("R: "+REVERSE);
-        if (existing != null && PENDING.getIfPresent(existing) != null)
-            return existing;
+        // Use compute() to lock the specific ServerAddress key and perform the check-then-act logic atomically.
+        return REVERSE.compute(real, (addressKey, existingPort) -> {
+            // Check if we already have a valid port in both maps
+            if (existingPort != null && PENDING.getIfPresent(existingPort) != null) {
+                return existingPort;
+            }
 
-        int port = PORT_COUNTER.updateAndGet(p -> p >= 65535 ? 10001 : p + 1);
-        PENDING.put(port, real);
-        REVERSE.put(real, port);
+            int newPort = PORT_COUNTER.updateAndGet(p -> p >= 65535 ? 10001 : p + 1);
+            PENDING.put(newPort, addressKey);
 
-        return port;
+            return newPort;
+        });
     }
 
     public static ServerAddress get(int port) {

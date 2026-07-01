@@ -34,10 +34,18 @@ import org.jspecify.annotations.NonNull;
 import static _1ms.McOverTor.Main.*;
 
 public class ChangeIP extends Screen {
-    private int status = 0;
+    private volatile int status = 0;
+    private static volatile long cooldownEndsAt = 0;
 
     public ChangeIP() {
         super(Component.literal("Change IP"));
+        long now = System.currentTimeMillis();
+        if (now >= cooldownEndsAt) {
+            TorManager.changeCircuits().thenAccept(i -> status = i);
+            cooldownEndsAt = now + 10_000;
+        } else {
+            status = 3;
+        }
     }
 
     @Override
@@ -55,7 +63,7 @@ public class ChangeIP extends Screen {
 
     @Override
     public void onClose() {
-        this.minecraft.setScreen(new JoinMultiplayerScreen(new TitleScreen()));
+        this.minecraft.setScreenAndShow(new JoinMultiplayerScreen(new TitleScreen()));
     }
 
     @Override
@@ -69,12 +77,22 @@ public class ChangeIP extends Screen {
         graphics.text(this.font,verText,2, this.height-10, 0xFFFFFFFF);
 
         switch (status) {
-            case 0-> { //Will be 0 at first
-                graphics.centeredText(this.font, "Changing IP...", centerX, centerY, 0xFFFFFFFF);
-                this.status = TorManager.changeCircuits();//TODO ASYNC
+            case 0 -> graphics.centeredText(this.font, "Changing IP...", centerX, centerY, 0xFFFFFFFF); //Will be 0 at first
+            case 1 -> graphics.centeredText(this.font, "You've successfully changed IP.", centerX, centerY, 0xFF00FF00);
+            case 2 -> graphics.centeredText(this.font, "Failed to change IP!", centerX, centerY, 0xFFFF0000);
+            case 3 -> {
+                long remaining = Math.max(0, (cooldownEndsAt - System.currentTimeMillis() + 999) / 1000);
+                graphics.centeredText(this.font, "Waiting for Tor's IP rate limit: " + remaining, centerX, centerY, 0xFFFF0000);
             }
-            case 1-> graphics.centeredText(this.font, "You've successfully changed IP.", centerX, centerY, 0xFF00FF00);
-            case 2-> graphics.centeredText(this.font, "Failed to change IP!", centerX, centerY, 0xFFFF0000);
+        }
+    }
+
+    @Override
+    public void tick() {
+        if (status == 3 && System.currentTimeMillis() >= cooldownEndsAt) {
+            status = 0;
+            TorManager.changeCircuits().thenAccept(i -> status = i);
+            cooldownEndsAt = System.currentTimeMillis() + 10_000;
         }
     }
 }
