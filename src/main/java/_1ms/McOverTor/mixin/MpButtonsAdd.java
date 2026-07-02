@@ -64,14 +64,14 @@ abstract class MpButtonsAdd extends Screen {
             )
     )
     public void init(CallbackInfo ci) {
-        newIpButton = Button.builder(Component.literal("Change IP"),_ -> this.minecraft.gui.setScreen(new ChangeIP()))
+        newIpButton = Button.builder(Component.literal("Change IP"),_ -> this.minecraft.setScreen(new ChangeIP()))
                 .size(95,21).build();
         newIpButton.active = progress >= 100;
 
-        settButton = SpriteIconButton.builder(Component.literal("Tor options"),_ -> this.minecraft.gui.setScreen(new Settings()),false)
+        settButton = SpriteIconButton.builder(Component.literal("Tor options"),_ -> this.minecraft.setScreen(new Settings()),false)
                 .size(26,26).sprite(Identifier.fromNamespaceAndPath("mcovertor","settings"),22,22).build();
 
-        regButton = SpriteIconButton.builder(Component.literal("Tor regions"),_ -> this.minecraft.gui.setScreen(new Region()),true)
+        regButton = SpriteIconButton.builder(Component.literal("Tor regions"),_ -> this.minecraft.setScreen(new Region()),true)
                 .size(26,26).sprite(Identifier.fromNamespaceAndPath("mcovertor", "globe"),22,22).build();
 
         torButton = Button.builder(Component.literal("Tor: "+(progress==100?"§aON":"§cOFF")),_ -> TorBtnFunc()).size(95,21).build();
@@ -99,7 +99,7 @@ abstract class MpButtonsAdd extends Screen {
             TorManager.startTor();
         } else {
             TorManager.exitTorAsync(true)
-                    .thenAcceptAsync(_->this.minecraft.gui.setScreen(new JoinMultiplayerScreen(new TitleScreen())),this.minecraft);
+                    .thenAcceptAsync(_->this.minecraft.setScreen(new JoinMultiplayerScreen(new TitleScreen())),this.minecraft);
         }
     }
 
