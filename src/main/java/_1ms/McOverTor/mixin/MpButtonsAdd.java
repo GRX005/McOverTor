@@ -68,7 +68,7 @@ abstract class MpButtonsAdd extends Screen {
                 .size(95,21).build();
         newIpButton.active = progress >= 100;
 
-        settButton = SpriteIconButton.builder(Component.literal("Tor options"),_ -> this.minecraft.setScreen(new Settings()),false)
+        settButton = SpriteIconButton.builder(Component.literal("Tor options"),_ -> this.minecraft.setScreen(new Settings()),true)
                 .size(26,26).sprite(Identifier.fromNamespaceAndPath("mcovertor","settings"),22,22).build();
 
         regButton = SpriteIconButton.builder(Component.literal("Tor regions"),_ -> this.minecraft.setScreen(new Region()),true)

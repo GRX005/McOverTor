@@ -79,7 +79,7 @@ public class TorConnect extends Screen {
             TorManager.exitTorAsync(true).thenAcceptAsync(_->onClose(), this.minecraft);
     }
 
-    private String text = "Tor might be failing to connect";
+    private String failToConnText = null;
     @Override
     public void extractRenderState(@NonNull GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
 
@@ -106,9 +106,11 @@ public class TorConnect extends Screen {
             return;
         }
         if (failToConn) {
-            if (text.length()==31)
-                RegionMgr.hasSelectedCountries().thenAcceptAsync(b->text= text + (b?" because of your selected countries.":" because of your internet."), this.minecraft);
-            graphics.centeredText(this.font, text, xhalf, y + barHeight + 5, 0xFFFF0000);
+            if (failToConnText==null) {
+                failToConnText = "Tor might be failing to connect";
+                RegionMgr.hasSelectedCountries().thenAcceptAsync(b->failToConnText = failToConnText + (b?" because of your selected countries.":" because of your internet."), this.minecraft);
+            }
+            graphics.centeredText(this.font, failToConnText, xhalf, y + barHeight + 5, 0xFFFF0000);
         }
 
 //Otherwise the tor status msgs.
