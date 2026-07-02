@@ -78,7 +78,7 @@ public class Region extends Screen {
     }
 
     private void closeFunc() {
-        this.minecraft.setScreenAndShow(new JoinMultiplayerScreen(new TitleScreen()));
+        this.minecraft.gui.setScreen(new JoinMultiplayerScreen(new TitleScreen()));
     }
 //Switch between multi or single node application, and/or apply the change of countries
     private void closeBtnF() {
