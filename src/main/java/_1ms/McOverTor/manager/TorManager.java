@@ -77,30 +77,32 @@ public class TorManager {
 
     //Multiplatform Tor client launcher, also reads it's output and supplies it to the loading screen, and extracts the client if it's not found in windows.
     private static void launchTor() {
-        if(isLinux){
-            try {
-                Files.setPosixFilePermissions(tor, PosixFilePermissions.fromString("rwxr-xr-x")); //Perm so ./tor can be ran
-            } catch (IOException e) {
-                logger.error("[McOverTor] Failed to set Tor PosixFilePermissions.");
-                throw new RuntimeException(e);
+        Thread.ofVirtual().name("TorStarter").start(()->{
+            if(isLinux){
+                try {
+                    Files.setPosixFilePermissions(tor, PosixFilePermissions.fromString("rwxr-xr-x")); //Perm so ./tor can be ran
+                } catch (IOException e) {
+                    logger.error("Failed to set Tor PosixFilePermissions.");
+                    throw new RuntimeException(e);
+                }
             }
-        }
 
-        final ProcessBuilder pb = new ProcessBuilder(tor.toAbsolutePath().toString(), "-f", confPath+File.separator+"torrc", "--DataDirectory", confPath.toString(),
-                "--SocksPort", sPort, "--ControlPort", cPort, "--HashedControlPassword", "16:5CC34EC2B16C1DA260CE40B1D139DA73AAFAFF5EA46E17D2E20191BA76");
+            final ProcessBuilder pb = new ProcessBuilder(tor.toAbsolutePath().toString(), "-f", confPath+File.separator+"torrc", "--DataDirectory", confPath.toString(),
+                    "--SocksPort", sPort, "--ControlPort", cPort, "--HashedControlPassword", "16:5CC34EC2B16C1DA260CE40B1D139DA73AAFAFF5EA46E17D2E20191BA76");
 
-        if(isLinux)
-            pb.environment().put("LD_LIBRARY_PATH", ":"+ tor.getParent());
-        try {
-            torP = pb.start();
-            Thread.ofVirtual().name("TorOutputReader").start(TorManager::readTorOutput);
-            Runtime.getRuntime().addShutdownHook(torStopThread = Thread.ofVirtual().name("TorStopper").unstarted(() -> exitTor(false))); //The shutdown hook should always be null at this point.
-            logger.info("[McOverTor] Tor has been launched.");
-        } catch (IOException e) {
-            logger.error("[McOverTor] Failed to launch Tor!");
-            failToStart = true;
-            logger.error(e);
-        }
+            if(isLinux)
+                pb.environment().put("LD_LIBRARY_PATH", ":"+ tor.getParent());
+            try {
+                torP = pb.start();
+                Thread.ofVirtual().name("TorOutputReader").start(TorManager::readTorOutput);
+                Runtime.getRuntime().addShutdownHook(torStopThread = Thread.ofVirtual().name("TorStopper").unstarted(() -> exitTor(false))); //The shutdown hook should always be null at this point.
+                logger.info("Tor has been launched.");
+            } catch (IOException e) {
+                logger.error("Failed to launch Tor!");
+                failToStart = true;
+                logger.error(e);
+            }
+        });
     }
 
     private static void readTorOutput(){
