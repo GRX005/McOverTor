@@ -20,45 +20,56 @@
 
 package _1ms.McOverTor.manager;
 
+import _1ms.McOverTor.Main;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.RemovalListeners;
 import com.google.common.cache.RemovalNotification;
 import net.minecraft.client.network.ServerAddress;
 
+import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 //We store the srv addresses needed for bypassing mc's dns resolution and using Tor's like this.
 //We generate a unique port for each ServerAddress and store it in a thread-safe Cache, which is basically a hashmap, so we make another one and keep them in sync, to optimally look up any value without iterating over all entries for each srv.
 public class DnsMgr {
-
     private static final ConcurrentHashMap<ServerAddress, Integer> REVERSE = new ConcurrentHashMap<>();
+
     private static final Cache<Integer, ServerAddress> PENDING = CacheBuilder.newBuilder()
-            .expireAfterAccess(10, TimeUnit.MINUTES)
-            .removalListener((RemovalNotification<Integer, ServerAddress> n) ->
-                    REVERSE.remove(Objects.requireNonNull(n.getValue())))
+            .expireAfterAccess(Duration.ofMinutes(10))
+            // Run off-thread using Guava's native async wrapper so eviction can never
+            // re-enter REVERSE while REVERSE.compute() is holding that key's lock.
+            .removalListener(RemovalListeners.asynchronous(
+                    (RemovalNotification<Integer, ServerAddress> n) ->
+                            REVERSE.remove(Objects.requireNonNull(n.getValue()), n.getKey()),
+                    Main.vExec
+            ))
             .build();
 
     private static final AtomicInteger PORT_COUNTER = new AtomicInteger(10000);
 
     public static int register(ServerAddress real) {
+        // Fast path: no locking, handles the overwhelming majority of calls
+        // (already-registered, still-valid address).
         Integer existing = REVERSE.get(real);
-//        System.out.println("P: "+PENDING.asMap());
-//        System.out.println("R: "+REVERSE);
-        if (existing != null && PENDING.getIfPresent(existing) != null)
+        if (existing != null && PENDING.getIfPresent(existing) != null) {
             return existing;
+        }
+        // Slow path: only taken on first registration or after expiry.
+        return REVERSE.compute(real, (key, port) -> {
+            if (port != null && PENDING.getIfPresent(port) != null) {
+                return port; // lost the race to another thread, reuse it
+            }
+            int newPort = PORT_COUNTER.updateAndGet(p -> p >= 65535 ? 10001 : p + 1);
 
-        int port = PORT_COUNTER.updateAndGet(p -> p >= 65535 ? 10001 : p + 1);
-        PENDING.put(port, real);
-        REVERSE.put(real, port);
-
-        return port;
+            PENDING.put(newPort, key);
+            return newPort;
+        });
     }
 
     public static ServerAddress get(int port) {
         return PENDING.getIfPresent(port);
     }
-
 }

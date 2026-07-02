@@ -33,24 +33,27 @@ import java.nio.file.attribute.PosixFilePermissions;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.Random;
+import java.util.concurrent.CompletableFuture;
 
-import static _1ms.McOverTor.Main.confPath;
-import static _1ms.McOverTor.Main.isLinux;
+import static _1ms.McOverTor.Main.*;
 
 public class TorManager {
-    private static Socket socket;
-    private static PrintWriter out;
-    private static BufferedReader in;
-    private static Process torP;
-    private static Thread torStopThread;
+    private static volatile Socket socket;
+    private static volatile PrintWriter out;
+    private static volatile BufferedReader in;
+    private static volatile Process torP;
+    private static volatile Thread torStopThread;
     private static final Path tor = confPath.resolve("tor");
 
     public static volatile int progress = 0;
     public static volatile String message = "(starting): Starting";
-    public static String sPort = "9050";
-    private static String cPort = "9051";
+    public static volatile String sPort = "9050";
+    private static volatile String cPort = "9051";
     private static final Logger logger = LogManager.getLogger("McOverTor/TorControl");
-    private static TorConnect connScrn;
+    private static volatile TorConnect connScrn;
+
+    public static volatile boolean failToStart = false;
+    public static volatile boolean failToConn = false;
 
     public static void startTor() {
         TorConnect scrn = new TorConnect();
@@ -62,7 +65,8 @@ public class TorManager {
     //Extract the files located in the plugin to the desired path.
     public static void extractTor(String input, String output) {
         Thread.ofVirtual().name("TorFileExtract").start(()-> { //Async so all the unpackings can run concurrently, and it won't slow down the client's starting.
-            try (BufferedInputStream in = new BufferedInputStream(Objects.requireNonNull(TorManager.class.getResourceAsStream(input))); BufferedOutputStream out = new BufferedOutputStream(Files.newOutputStream(confPath.resolve(output)))) {
+            try (BufferedInputStream in = new BufferedInputStream(Objects.requireNonNull(TorManager.class.getResourceAsStream(input)));
+                 BufferedOutputStream out = new BufferedOutputStream(Files.newOutputStream(confPath.resolve(output)))) {
                 in.transferTo(out);
             } catch (IOException e) {
                 logger.error("Couldn't extract tor");
@@ -81,7 +85,10 @@ public class TorManager {
                 throw new RuntimeException(e);
             }
         }
-        final ProcessBuilder pb = new ProcessBuilder(tor.toAbsolutePath().toString(), "-f", confPath+File.separator+"torrc", "--DataDirectory", confPath.toString(), "--SocksPort", sPort, "--ControlPort", cPort, "--HashedControlPassword", "16:5CC34EC2B16C1DA260CE40B1D139DA73AAFAFF5EA46E17D2E20191BA76");
+
+        final ProcessBuilder pb = new ProcessBuilder(tor.toAbsolutePath().toString(), "-f", confPath+File.separator+"torrc", "--DataDirectory", confPath.toString(),
+                "--SocksPort", sPort, "--ControlPort", cPort, "--HashedControlPassword", "16:5CC34EC2B16C1DA260CE40B1D139DA73AAFAFF5EA46E17D2E20191BA76");
+
         if(isLinux)
             pb.environment().put("LD_LIBRARY_PATH", ":"+ tor.getParent());
         try {
@@ -91,7 +98,7 @@ public class TorManager {
             logger.info("[McOverTor] Tor has been launched.");
         } catch (IOException e) {
             logger.error("[McOverTor] Failed to launch Tor!");
-            TorConnect.failToStart = true;
+            failToStart = true;
             logger.error(e);
         }
     }
@@ -101,6 +108,7 @@ public class TorManager {
             String line;
             boolean firstVer = true;
             while ((line = reader.readLine()) != null) {
+                //System.out.println(line);
                 if (firstVer) {//Print Tor's version
                     var ver = line.split(" ");
                     logger.info("Starting {} {} {}", ver[4], ver[5], ver[6]);
@@ -112,7 +120,7 @@ public class TorManager {
                     break;
                 }
                 if(line.contains("Failed")) {
-                    message = "§4"+line.substring(29);
+                    message = line.split("]")[1].trim();
                     logger.info("Error: {}", message);
                     break;
                 }
@@ -120,7 +128,7 @@ public class TorManager {
                     progress = Integer.parseInt(line.substring(line.indexOf("Bootstrapped") + 12, line.indexOf("%")).trim());
                     message = line.substring(line.indexOf("%") + 1).trim();
                     logger.info("Progress: {}%, Status: {}", progress, message);
-                    TorConnect.failToConn=false;//Needed here to rm the warn msg from the ui when the connection advances
+                    failToConn=false;//Needed here to rm the warn msg from the ui when the connection advances
                     //Itt meg tudsz hívni egy funkciót ami előrébb viszi a progress bars progress százalékra
                     if (message.contains("(starting)")) { //First bootstrapped msg, init control as soon as possible.
                         authControl();
@@ -136,7 +144,7 @@ public class TorManager {
             }
         } catch (IOException e) {
             logger.error("Error while reading Tor output!");
-            TorConnect.failToStart = true;
+            failToStart = true;
             logger.error(e);
         }
     }
@@ -163,7 +171,7 @@ public class TorManager {
                         prevProg=currProg;
                     }
                     if (counter==10)
-                        TorConnect.failToConn=true;
+                        failToConn=true;
                     Thread.sleep(Duration.ofSeconds(1));
                 } catch (InterruptedException e) {
                     break;
@@ -173,7 +181,7 @@ public class TorManager {
     }
 
     //Forcefully shut down the Tor client when needed.
-    public static void killTor(boolean relaunch, boolean linuxKill) {
+    private static void killTor(boolean relaunch, boolean linuxKill) {
         try {
             if(torStopThread != null) {
                 Runtime.getRuntime().removeShutdownHook(torStopThread); //Remove shutdown hook as the Tor client is stopped here.
@@ -186,7 +194,7 @@ public class TorManager {
                     final Random rand = new Random();
                     sPort = String.valueOf(rand.nextInt(61001,65535));
                     do cPort = String.valueOf(rand.nextInt(61001,65535)); while (Objects.equals(cPort, sPort)); //Gen and check if we somehow gened the same num.
-                    logger.info("[McOverTor] Default ports already occupied, switching to Socks: {}, Control: {}", sPort,cPort);
+                    logger.info("Default ports already occupied, switching to Socks: {}, Control: {}", sPort,cPort);
                 }
             else
                 new ProcessBuilder("taskkill", "/F", "/IM", "tor").start().waitFor();
@@ -194,13 +202,17 @@ public class TorManager {
                 launchTor();
             else
                 resetProg();
-            logger.info("[McOverTor] Killed already running Tor.");
+            logger.info("Killed already running Tor.");
         } catch (InterruptedException | IOException ignored) {
-            TorConnect.failToStart = true;
+            failToStart = true;
         }
     }
 
-    //Connect to the Tor client control port.
+    public static CompletableFuture<Void> killTorAsync(boolean relaunch, boolean linuxKill) {
+        return CompletableFuture.runAsync(()->killTor(relaunch,linuxKill), vExec);
+    }
+
+    //Connect to the Tor client control port. Only called from VT
     private static void authControl() {
         try {
             socket = new Socket("127.0.0.1", Integer.parseInt(cPort));
@@ -218,12 +230,12 @@ public class TorManager {
             }
         } catch (IOException e) {
             logger.error("Tor couldn't be started, control port auth error.");
-            TorConnect.failToStart = true;
+            failToStart = true;
         }
         torP.destroy();
     }
     //Properly close Tor.
-    public static void exitTor(boolean remHook) {
+    private static void exitTor(boolean remHook) {
         try {
             out.println("SIGNAL SHUTDOWN");
             final String resp = in.readLine();//If the Tor client freezes, this will make the game freeze too, but it shouldn't
@@ -234,25 +246,31 @@ public class TorManager {
                     Runtime.getRuntime().removeShutdownHook(torStopThread);
                     torStopThread = null;
                 }
-                logger.info("[McOverTor] Tor has been closed.");
+                logger.info("Tor has been closed.");
                 return;
             }
         } catch (IOException ignored) {}
-        logger.warn("[McOverTor] Failed to close Tor.");
+        logger.warn("Failed to close Tor.");
         killTor(false, true);//Kill tor if it couldn't be closed.
     }
+
+    public static CompletableFuture<Void> exitTorAsync(boolean remHook) {
+        return CompletableFuture.runAsync(()->exitTor(remHook), vExec);
+    }
     //Change circuits without restarting, using the control port.
-    public static int changeCircuits() {
-        try {
-            out.println("SIGNAL NEWNYM");
-            final String resp = in.readLine();
-            if (resp.contains("250")) {
-                logger.info("[McOverTor] Circuits changed.");
-                return 1;
-            }
-        } catch (IOException ignored) {}
-        logger.warn("[McOverTor] Failed to change circuits.");
-        return 2;
+    public static CompletableFuture<Integer> changeCircuits() {
+        return CompletableFuture.supplyAsync(()->{
+            try {
+                out.println("SIGNAL NEWNYM");
+                final String resp = in.readLine();
+                if (resp.contains("250")) {
+                    logger.info("Circuits changed.");
+                    return 1;
+                }
+            } catch (IOException ignored) {}
+            logger.warn("Failed to change circuits.");
+            return 2;
+        }, vExec);
     }
     //Only log errors, otherwise the stdout buffer fills up, it shouldn't throw errors :)
     private static void logsAdjust() {

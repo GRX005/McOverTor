@@ -45,36 +45,47 @@ import static _1ms.McOverTor.manager.TorManager.progress;
 abstract class MpButtonsAdd extends Screen {
 
     @Unique
-    private final ButtonWidget newIpButton = ButtonWidget.builder(
-            Text.literal("Change IP"),
-            buttonWidget -> this.client.setScreen(new ChangeIP())
-    ).dimensions(0, 0, 95, 21).build();
+    private ButtonWidget newIpButton;
 
     @Unique
-    private final TextIconButtonWidget settButton = TextIconButtonWidget.builder(Text.literal("Tor options"),
-                btn->this.client.setScreen(new Settings()),false)
-        .dimension(26,26).texture(Identifier.of("mcovertor", "settings"),22,22).build();
+    private TextIconButtonWidget settButton;
 
     @Unique
-    private final TextIconButtonWidget regButton = TextIconButtonWidget.builder(Text.literal("Tor regions"),
-                    btn->this.client.setScreen(new Region()),true)
-            .dimension(26,26).texture(Identifier.of("mcovertor", "globe"),22,22).build();
+    private TextIconButtonWidget regButton;
+
+    @Unique
+    private ButtonWidget torButton;
 
     protected MpButtonsAdd(Text title) {
         super(title);
     }
 
-    @Inject(method = "init()V", at = @At("TAIL"))
-    public void multiplayerGuiOpen(CallbackInfo ci) {
+    @Inject(
+            method = "init",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/client/gui/screen/multiplayer/MultiplayerScreen;refreshWidgetPositions()V"
+            )
+    )
+    public void init(CallbackInfo ci) {
+        newIpButton = ButtonWidget.builder(Text.literal("Change IP"), b -> this.client.setScreen(new ChangeIP()))
+                .size(95,21).build();
+
         newIpButton.active = progress >= 100;
-        //without this it'll stay focused after click for some reason
-        newIpButton.setFocused(false);
+
+        settButton = TextIconButtonWidget.builder(Text.literal("Tor options"),b -> this.client.setScreen(new Settings()),true)
+                .dimension(26,26).texture(Identifier.of("mcovertor","settings"),22,22).build();
+
+        regButton = TextIconButtonWidget.builder(Text.literal("Tor regions"),b -> this.client.setScreen(new Region()),true)
+                .dimension(26,26).texture(Identifier.of("mcovertor", "globe"),22,22).build();
+
+        torButton = ButtonWidget.builder(Text.literal("Tor: "+(progress==100?"§aON":"§cOFF")),b -> TorBtnFunc()).size(95,21).build();
+
         this.addDrawableChild(newIpButton);
         this.addDrawableChild(settButton);
         this.addDrawableChild(regButton);
+        this.addDrawableChild(torButton);
     }
-    @Unique
-    private ButtonWidget torButton;
 
     @Inject(method = "refreshWidgetPositions()V", at = @At("HEAD"))
     public void refresh(CallbackInfo ci) {
@@ -84,21 +95,16 @@ abstract class MpButtonsAdd extends Screen {
         newIpButton.setPosition(calcX(isUpper, isRight, 205, 105, 110, 10), isUpper ? 5 : this.height-27);
         settButton.setPosition(calcX(isUpper, isRight, 235, 133, 210, 107), isUpper ? 3 : this.height-56);
         regButton.setPosition(calcX(isUpper, isRight, 265, 133, 240, 107), isUpper ? 3 : this.height-28);
-        if(torButton!=null)
-            this.remove(torButton);
-        //We init this here and re-add every time, otherwise it'll stay focused for some reason after turning it off.
-        torButton = ButtonWidget.builder(Text.literal("Tor: " + (progress == 100 ? "§aON" : "§cOFF")), this::TorBtnFunc).dimensions(isRight ? this.width-105 : 10, isUpper ? 5 : this.height - 52, 95, 21).build();
-
-        this.addDrawableChild(torButton);
+        torButton.setPosition(isRight ? this.width-105 : 10, isUpper ? 5 : this.height - 52);
     }
 
     @Unique
-    private void TorBtnFunc(ButtonWidget ignored) {
+    private void TorBtnFunc() {
         if (progress < 100) {
             TorManager.startTor();
         } else {
-            TorManager.exitTor(true);
-            this.client.setScreen(new MultiplayerScreen(new TitleScreen()));
+            TorManager.exitTorAsync(true)
+                    .thenAcceptAsync(a->this.client.setScreen(new MultiplayerScreen(new TitleScreen())),this.client);
         }
     }
 

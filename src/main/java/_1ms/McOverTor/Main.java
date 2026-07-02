@@ -35,11 +35,15 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class Main implements ModInitializer {
     public static final Path confPath = FabricLoader.getInstance().getGameDir().resolve("mcovertor");
     public static final boolean isLinux = System.getProperty("os.name").toLowerCase().contains("linux");
     public static final Logger logger = LogManager.getLogger("McOverTor");
+
+    public static final ExecutorService vExec = Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("tor-worker-", 0).factory());
 
     public final static Text madeByText = Text.literal("Made by _1ms.");
     public final static URI githubUrl = URI.create("https://github.com/GRX005");

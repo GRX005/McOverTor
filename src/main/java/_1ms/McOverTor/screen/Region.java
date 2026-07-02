@@ -41,26 +41,41 @@ import net.minecraft.text.Text;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 
 import static _1ms.McOverTor.Main.*;
 import static _1ms.McOverTor.manager.RegionMgr.TorRegionInfo;
 import static _1ms.McOverTor.manager.SettingsMgr.get;
 
 public class Region extends Screen {
-    private final List<TorRegionInfo> regions = RegionMgr.getCtr();
-    private final Set<String> usedR = RegionMgr.getSelCtr();
+    private List<TorRegionInfo> regions;
+    private Set<String> usedR;
     private final SettCheckBox multiRegion = new SettCheckBox(0,0,Text.literal("Enforce for all nodes"), TorOption.allNodes);
     private final ButtonWidget closeBtn = ButtonWidget.builder(Text.literal("Done"), btn-> closeBtnF()).build();
     private final ButtonWidget resetBtn = ButtonWidget.builder(Text.literal("Reset"), btn-> usedR.clear()).size(100,20).build();
     private TorRegionList regList;
-    private final Set<String> snapshot;
+    private Set<String> snapshot;
     private final boolean blSnap;
+
+    private boolean isLoading=true;
 
     public Region() {//Take a snapshot of the options, so when the menu is closed we can see what changed.
         super(Text.literal("Tor Region Selector"));
-        snapshot = new HashSet<>(usedR);
         blSnap = get(TorOption.allNodes);
+
+        CompletableFuture.supplyAsync(() -> {
+            var r = RegionMgr.getCtr();
+            var used = RegionMgr.getSelCtr();
+            return Map.entry(r, used); // or a small record
+        }, vExec).thenAcceptAsync(entry -> {
+            regions  = entry.getKey();
+            usedR    = entry.getValue();
+            snapshot = new HashSet<>(usedR);
+            isLoading = false;
+            this.refreshWidgetPositions();
+        }, MinecraftClient.getInstance()); //Use static accessor as it might not be assigned here yet with this.minecraft
     }
 
     private void closeFunc() {
@@ -69,14 +84,12 @@ public class Region extends Screen {
 //Switch between multi or single node application, and/or apply the change of countries
     private void closeBtnF() {
         if(!usedR.equals(snapshot)) {//If the selected countries changed
-            RegionMgr.modRegions(usedR);
-            checkAndRelaunch();
+            RegionMgr.modRegions(usedR).thenAcceptAsync(b->checkAndRelaunch(),this.client);
             return;
         }
         //Re-Start Tor if already started so that the settings will apply, otherwise close.
         if (blSnap != get(TorOption.allNodes) && !usedR.isEmpty()) { //If the state of the tick changed
-            RegionMgr.remOrAdd(get(TorOption.allNodes));
-            checkAndRelaunch();
+            RegionMgr.remOrAdd(get(TorOption.allNodes)).thenAcceptAsync(b->checkAndRelaunch(), this.client);
             return;
         }
          closeFunc();
@@ -84,8 +97,7 @@ public class Region extends Screen {
 
     private void checkAndRelaunch() {
         if(TorManager.progress == 100) {
-            TorManager.exitTor(true);
-            TorManager.startTor();
+            TorManager.exitTorAsync(true).thenAcceptAsync(b ->TorManager.startTor(), this.client);
             return;
         }
         closeFunc();
@@ -94,6 +106,8 @@ public class Region extends Screen {
     @Override
     protected void init() {
         super.init();
+        if (isLoading)
+            return;
 
         closeBtn.setFocused(false);
         resetBtn.setFocused(false);
@@ -135,6 +149,10 @@ public class Region extends Screen {
         context.drawTextWithShadow(this.textRenderer, verText,2, this.height-10, 0xFFFFFFFF);
 
         renderWindow(context, this.width/2-150, this.height/2-200, 300, 400, "McOverTor Regions");
+        if (isLoading) {
+            context.drawCenteredTextWithShadow(this.textRenderer, "Loading regions...", this.width / 2, this.height / 2, 0xFFFFFFFF);
+            return;
+        }
         regList.render(context,mouseX,mouseY,deltaTicks);
 
         multiRegion.render(context,mouseX,mouseY,deltaTicks);

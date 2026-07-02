@@ -20,6 +20,7 @@
 
 package _1ms.McOverTor.screen;
 
+import _1ms.McOverTor.manager.RegionMgr;
 import _1ms.McOverTor.manager.TorManager;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ConfirmLinkScreen;
@@ -31,12 +32,11 @@ import net.minecraft.client.gui.widget.PressableTextWidget;
 import net.minecraft.text.Text;
 
 import static _1ms.McOverTor.Main.*;
-import static _1ms.McOverTor.manager.TorManager.progress;
+import static _1ms.McOverTor.manager.TorManager.*;
 
 public class TorConnect extends Screen {
     //private static final Identifier IMAGE_ID = Identifier.of("mcovertor", "tor");
-    public static volatile boolean failToStart = false;
-    public static volatile boolean failToConn = false;
+
     private final ButtonWidget closeButton = ButtonWidget.builder(Text.literal("Okay"), Btn -> close())
             .dimensions(0, 0, 120, 20).build();
     private final ButtonWidget cancelButton = ButtonWidget.builder(Text.literal("Cancel"), Btn -> cancelBtnFunc())
@@ -79,13 +79,12 @@ public class TorConnect extends Screen {
 //After 5% we estabilish a control port conn with Tor so we can close it gracefully.
     private void cancelBtnFunc() {
         if(progress < 5)
-            TorManager.killTor(false, true);
+            TorManager.killTorAsync(false, true).thenAcceptAsync(b->close(), this.client);
         else
-            TorManager.exitTor(true);
-        close();
+            TorManager.exitTorAsync(true).thenAcceptAsync(b->close(), this.client);
     }
 
-
+    private String failToConnText = null;
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         super.render(context, mouseX, mouseY, delta);
@@ -111,11 +110,17 @@ public class TorConnect extends Screen {
             cancelButton.render(context, mouseX, mouseY, delta);
             return;
         }
-        if (failToConn)
-            context.drawCenteredTextWithShadow(this.textRenderer, Text.literal("Tor might be failing to connect because of your internet or country selections."), xhalf, y + barHeight +5, 0xFFFF0000);
+        if (failToConn) {
+            if (failToConnText==null) {
+                failToConnText = "Tor might be failing to connect";
+                RegionMgr.hasSelectedCountries().thenAcceptAsync(b->failToConnText= failToConnText + (b?" because of your selected countries.":" because of your internet."), this.client);
+            }
+            context.drawCenteredTextWithShadow(this.textRenderer, Text.literal(failToConnText), xhalf, y + barHeight + 5, 0xFFFF0000);
+        }
 
 //Otherwise the tor status msgs.
-        context.drawCenteredTextWithShadow(this.textRenderer, Text.literal(TorManager.message), xhalf, y + barHeight - 10, 0xA0FFFFFF);
+        var color = message.contains("Failed") ? 0xFFFF5555 : 0xA0FFFFFF;
+        context.drawCenteredTextWithShadow(this.textRenderer, Text.literal(TorManager.message), xhalf, y + barHeight - 10, color);
 
         if (progress < 100) {
             context.drawCenteredTextWithShadow(this.textRenderer, Text.literal("Connecting to Tor..."), xhalf, yhalf - 60, 0xFFFFFFFF);
@@ -128,8 +133,10 @@ public class TorConnect extends Screen {
     }
 //When the conn reaches 100%, remove the cancelBtn and add close.
     public void connCallback() {
-        this.remove(cancelButton);
-        this.addSelectableChild(closeButton);
+        this.client.execute(()->{
+            this.remove(cancelButton);
+            this.addSelectableChild(closeButton);
+        });
     }
 
     private void renderProgressBar(DrawContext context, int x, int y) {

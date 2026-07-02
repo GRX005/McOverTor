@@ -37,6 +37,7 @@ public class ChangeIP extends Screen {
             .dimensions(0, 0, 120, 20)
             .build();
     private int status = 0;
+    private static volatile long cooldownEndsAt = 0;
 
     @Override
     protected void init() {
@@ -58,6 +59,13 @@ public class ChangeIP extends Screen {
 
     public ChangeIP() {
         super(Text.literal("Change IP"));
+        long now = System.currentTimeMillis();
+        if (now >= cooldownEndsAt) {
+            TorManager.changeCircuits().thenAccept(i -> status = i);
+            cooldownEndsAt = now + 10_000;
+        } else {
+            status = 3;
+        }
     }
 
     @Override
@@ -72,12 +80,22 @@ public class ChangeIP extends Screen {
         renderWindow(context, (this.width - 200) / 2-10, centerY - 30, 220, 100, "McOverTor Connection");
         closeButton.render(context, mouseX, mouseY, delta);
         switch (status) {
-            case 0-> { //Will be 0 at first
-                context.drawCenteredTextWithShadow(this.textRenderer, "Changing IP...", centerX, centerY, 0xFFFFFFFF);
-                this.status = TorManager.changeCircuits();
-            }
+            case 0-> context.drawCenteredTextWithShadow(this.textRenderer, "Changing IP...", centerX, centerY, 0xFFFFFFFF); //Will be 0 at first
             case 1-> context.drawCenteredTextWithShadow(this.textRenderer, "You've successfully changed IP.", centerX, centerY, 0xFF00FF00);
             case 2-> context.drawCenteredTextWithShadow(this.textRenderer, "Failed to change IP!", centerX, centerY, 0xFFFF0000);
+            case 3-> {
+                long remaining = Math.max(0, (cooldownEndsAt - System.currentTimeMillis() + 999) / 1000);
+                context.drawCenteredTextWithShadow(this.textRenderer, "Waiting for Tor's IP rate limit: " + remaining, centerX, centerY, 0xFFFF0000);
+            }
+        }
+    }
+
+    @Override
+    public void tick() {
+        if (status == 3 && System.currentTimeMillis() >= cooldownEndsAt) {
+            status = 0;
+            TorManager.changeCircuits().thenAccept(i -> status = i);
+            cooldownEndsAt = System.currentTimeMillis() + 10_000;
         }
     }
 }
