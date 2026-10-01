@@ -36,7 +36,7 @@ public class SettingsMgr {
     private static final Path settConf = confPath.resolve("config.cfg");
     private static final Gson gson = new Gson();
     private static ConcurrentHashMap<TorOption, Boolean> settings = new ConcurrentHashMap<>();
-    private final static String ver = "CONFIG_VERSION: 1.8";//+1 this when Tor is updated
+    private final static String ver = "CONFIG_VERSION: 1.9";//+1 this when Tor is updated
 
     //Save cfg, and load def settings if needed.
     private static void saveConfig(boolean first) {

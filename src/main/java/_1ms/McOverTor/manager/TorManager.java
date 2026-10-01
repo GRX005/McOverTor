@@ -172,7 +172,7 @@ public class TorManager {
                         counter=0;
                         prevProg=currProg;
                     }
-                    if (counter==10)
+                    if (counter==15)
                         failToConn=true;
                     Thread.sleep(Duration.ofSeconds(1));
                 } catch (InterruptedException e) {
